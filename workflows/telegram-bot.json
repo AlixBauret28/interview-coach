@@ -1,0 +1,2298 @@
+{
+  "name": "Interview Coach - Telegram bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "4f037278-c3aa-4c73-aac5-165367faa888",
+      "name": "Message received",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        1712,
+        656
+      ],
+      "webhookId": "c912b8cb-87bb-4b98-808a-94441dd7d57e",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// EDIT THIS LINE to restrict the bot. Empty array means anyone who finds the bot can use it.\nconst ALLOWED_CHAT_IDS = ['8784636815'];\n\nconst first = $input.first();\nconst msg = (first.json.message) || {};\nconst chat = msg.chat || {};\nconst chatId = String(chat.id || '');\nconst firstName = chat.first_name || 'there';\nconst text = String(msg.text || msg.caption || '').trim();\nconst hasVoice = Boolean(msg.voice || msg.audio);\nconst doc = msg.document || null;\n\nconst allowed = ALLOWED_CHAT_IDS.length === 0 || ALLOWED_CHAT_IDS.indexOf(chatId) !== -1;\n\nlet kind = 'text';\nlet command = '';\nlet arg = '';\n\nif (hasVoice) {\n  kind = 'voice';\n} else if (doc) {\n  kind = 'document';\n} else if (text.indexOf('/') === 0) {\n  kind = 'command';\n  const parts = text.slice(1).split(/\\s+/);\n  command = String(parts[0] || '').toLowerCase().split('@')[0];\n  arg = String(parts[1] || '').toLowerCase();\n} else if (text.length === 0) {\n  kind = 'other';\n}\n\n// Airtable formulas are built once here so every branch reuses the same escaped chat id.\nconst safeChat = chatId.replace(/'/g, '');\nconst formulaAttempts = \"{chat_id}='\" + safeChat + \"'\";\nconst formulaSessionOpen = \"AND({chat_id}='\" + safeChat + \"',{status}='open')\";\nconst formulaQuestionsActive = '{active}=1';\nconst formulaProfile = \"{chat_id}='\" + safeChat + \"'\";\n\n// The voice note or CV arrives as binary on the trigger item. Returning a fresh json\n// object would drop it, so it is carried through explicitly.\nreturn [{\n  json: {\n    chat_id: chatId,\n    first_name: firstName,\n    text: text,\n    kind: kind,\n    command: command,\n    arg: arg,\n    allowed: allowed,\n    doc_name: doc ? String(doc.file_name || '') : '',\n    doc_mime: doc ? String(doc.mime_type || '') : '',\n    formula_attempts: formulaAttempts,\n    formula_session_open: formulaSessionOpen,\n    formula_questions_active: formulaQuestionsActive,\n    formula_profile: formulaProfile\n  },\n  binary: first.binary\n}];"
+      },
+      "id": "755e0230-7e83-4cf8-a78c-95642281f538",
+      "name": "Normalise message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "allow",
+              "leftValue": "={{ $json.allowed }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f519bf5c-e511-4ae9-9003-de782a7d2e67",
+      "name": "Allowed user?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2160,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "p1",
+                    "leftValue": "={{ $json.command }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "practice"
+                  },
+                  {
+                    "id": "p2",
+                    "leftValue": "={{ $json.command }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "skip"
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "g1",
+                    "leftValue": "={{ $json.command }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "weak"
+                  },
+                  {
+                    "id": "g2",
+                    "leftValue": "={{ $json.command }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "stats"
+                  }
+                ],
+                "combinator": "or"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "h1",
+                    "leftValue": "={{ $json.command }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "hint"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "v1",
+                    "leftValue": "={{ $json.kind }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "voice"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "t1",
+                    "leftValue": "={{ $json.kind }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "text"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "s1",
+                    "leftValue": "={{ $json.command }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "setup"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d1",
+                    "leftValue": "={{ $json.kind }}",
+                    "operator": {
+                      "operation": "equals",
+                      "type": "string"
+                    },
+                    "rightValue": "document"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "help"
+        }
+      },
+      "id": "1aaf4557-73ef-4876-a125-c1d409c9a003",
+      "name": "Route by command",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2384,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "list",
+          "cachedResultName": "Interview Practice Coach ",
+          "cachedResultUrl": "https://airtable.com/appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblSYmhtV8WbgSiB1",
+          "mode": "id"
+        },
+        "filterByFormula": "={{ $json.formula_questions_active }}",
+        "options": {}
+      },
+      "id": "559a8ae0-94f1-4eb6-bf84-2e625c77e46a",
+      "name": "Load question bank",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2608,
+        -64
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblEuOAbzgvdns5KY",
+          "mode": "id"
+        },
+        "filterByFormula": "={{ $(\"Normalise message\").first().json.formula_attempts }}",
+        "options": {}
+      },
+      "id": "dc9b4cf1-e6d6-4c8a-93ff-cc0a934ddc77",
+      "name": "Load my attempts",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2832,
+        -64
+      ],
+      "executeOnce": true,
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxbeWKhCWoa7YIH",
+          "mode": "id"
+        },
+        "filterByFormula": "={{ $(\"Normalise message\").first().json.formula_session_open }}",
+        "options": {}
+      },
+      "id": "bfd81924-fd33-4de1-8308-36cd48fe399f",
+      "name": "Load open session",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        3056,
+        -64
+      ],
+      "executeOnce": true,
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Chooses the next question: weighted toward weak topics, skipping anything asked recently.\nconst n = $('Normalise message').first().json;\nconst TOPICS = ['behavioural', 'motivation', 'technical', 'company-fit', 'competency', 'case'];\n\nfunction flat(items) {\n  return items.map(function (it) {\n    const f = it.json.fields || it.json;\n    const out = {};\n    for (const k in f) { out[k] = f[k]; }\n    out._id = it.json.id || f.id;\n    return out;\n  });\n}\n\nconst questions = flat($('Load question bank').all()).filter(function (q) { return q.question_id && q.text; });\n\nlet attempts = [];\ntry { attempts = flat($('Load my attempts').all()).filter(function (a) { return a.question_id; }); } catch (e) { attempts = []; }\n\nlet sessions = [];\ntry { sessions = flat($('Load open session').all()).filter(function (s) { return s.question_id; }); } catch (e) { sessions = []; }\n\nconst openSession = sessions.length > 0 ? sessions[0] : null;\nconst skipping = n.command === 'skip';\nconst now = Date.now();\n\nif (questions.length === 0) {\n  return [{ json: { found: false, chat_id: n.chat_id, reply: 'The question bank is empty. Add some rows to the questions table in Airtable first.' } }];\n}\n\n// Work out which topic the user asked for, if any.\nconst arg = String(n.arg || '');\nlet wantedTopics = TOPICS.slice();\nlet drillingWeak = false;\n\nif (arg === 'weak') {\n  drillingWeak = true;\n} else if (arg.length > 0) {\n  if (TOPICS.indexOf(arg) === -1) {\n    return [{\n      json: {\n        found: false,\n        chat_id: n.chat_id,\n        reply: 'I do not know the topic \"' + arg + '\".\\n\\nTry one of these:\\n' + TOPICS.map(function (t) { return '/practice ' + t; }).join('\\n') + '\\n\\nOr just /practice for a mix, or /practice weak to drill your weakest topics.'\n      }\n    }];\n  }\n  wantedTopics = [arg];\n}\n\n// Average score per topic over the last 14 days, used for weighting.\nconst cutoff = now - 14 * 24 * 60 * 60 * 1000;\nconst recentAttempts = attempts.filter(function (a) {\n  const t = Date.parse(a.created_at || '');\n  return !isNaN(t) && t >= cutoff;\n});\n\nconst byTopic = {};\nrecentAttempts.forEach(function (a) {\n  const t = a.topic || 'unknown';\n  if (!byTopic[t]) { byTopic[t] = { sum: 0, count: 0 }; }\n  byTopic[t].sum += Number(a.score || 0);\n  byTopic[t].count += 1;\n});\n\nif (drillingWeak) {\n  const scored = TOPICS.filter(function (t) { return byTopic[t] && byTopic[t].count > 0; });\n  if (scored.length === 0) {\n    return [{ json: { found: false, chat_id: n.chat_id, reply: 'Not enough attempts yet to know your weak topics. Answer a few questions with /practice first.' } }];\n  }\n  scored.sort(function (a, b) { return (byTopic[a].sum / byTopic[a].count) - (byTopic[b].sum / byTopic[b].count); });\n  wantedTopics = scored.slice(0, 3);\n}\n\n// Questions answered in the last 5 attempts are excluded so the same one does not come straight back.\nconst sortedAttempts = attempts.slice().sort(function (a, b) { return Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0); });\nconst recentIds = sortedAttempts.slice(0, 5).map(function (a) { return a.question_id; });\n\n// Anything with a due date in the past is owed a repeat.\nconst dueIds = {};\nattempts.forEach(function (a) {\n  const d = Date.parse(a.due_at || '');\n  if (!isNaN(d) && d <= now) { dueIds[a.question_id] = true; }\n});\n\nlet pool = questions.filter(function (q) { return wantedTopics.indexOf(q.topic) !== -1; });\nif (pool.length === 0) { pool = questions.slice(); }\n\nlet fresh = pool.filter(function (q) { return recentIds.indexOf(q.question_id) === -1; });\nif (skipping && openSession) {\n  fresh = fresh.filter(function (q) { return q.question_id !== openSession.question_id; });\n}\nif (fresh.length === 0) { fresh = pool.slice(); }\n\n// Due questions win outright; otherwise weight by how weak the topic is.\nconst dueFirst = fresh.filter(function (q) { return dueIds[q.question_id]; });\nconst candidates = dueFirst.length > 0 ? dueFirst : fresh;\n\nconst weighted = candidates.map(function (q) {\n  const stat = byTopic[q.topic];\n  const avg = stat && stat.count > 0 ? stat.sum / stat.count : 2.5;\n  return { q: q, weight: (5 - avg) + Math.random() };\n});\nweighted.sort(function (a, b) { return b.weight - a.weight; });\n\nconst chosen = weighted[0].q;\nconst isDue = Boolean(dueIds[chosen.question_id]);\n\nlet lead = 'Here is your question';\nif (drillingWeak) { lead = 'Drilling your weak topics'; }\nelse if (skipping) { lead = 'New question'; }\nelse if (isDue) { lead = 'This one came back round'; }\n\nconst reply = lead + ' (' + chosen.topic + ', difficulty ' + (chosen.difficulty || 2) + ')\\n\\n' + chosen.text + '\\n\\nAnswer by text or voice note. /hint if you are stuck, /skip for a different one.';\n\nreturn [{\n  json: {\n    found: true,\n    chat_id: n.chat_id,\n    question_id: chosen.question_id,\n    topic: chosen.topic,\n    question_text: chosen.text,\n    difficulty: chosen.difficulty || 2,\n    reply: reply,\n    started_at: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "430e0d30-89f8-4339-97c1-95e0697afd63",
+      "name": "Pick a question",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "found",
+              "leftValue": "={{ $json.found }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3102a955-1d3a-4a6d-9d53-e7a3daf1fe7e",
+      "name": "Question found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3504,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxbeWKhCWoa7YIH",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.chat_id }}",
+            "question_id": "={{ $json.question_id }}",
+            "status": "open",
+            "started_at": "={{ $json.started_at }}",
+            "hints_used": 0
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "39eba9ba-a771-48f0-9557-9242522129c9",
+      "name": "Open a session",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        3728,
+        -144
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Normalise message\").first().json.chat_id }}",
+        "text": "={{ $(\"Pick a question\").first().json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "0dc912fc-192e-46d9-8cc9-a05e6a6a4d8e",
+      "name": "Send the question",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3952,
+        -64
+      ],
+      "retryOnFail": true,
+      "webhookId": "b9551fc0-2307-4361-b445-40a1354c1d7b",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblEuOAbzgvdns5KY",
+          "mode": "id"
+        },
+        "filterByFormula": "={{ $json.formula_attempts }}",
+        "options": {}
+      },
+      "id": "1b6a54fb-d8a0-4780-ad63-bf510400a018",
+      "name": "Load attempts for stats",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2608,
+        128
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Serves both /weak and /stats from one read of the attempts table.\nconst n = $('Normalise message').first().json;\n\nconst rows = $input.all().map(function (it) {\n  const f = it.json.fields || it.json;\n  return { topic: f.topic, score: Number(f.score), created_at: f.created_at, question_id: f.question_id };\n}).filter(function (r) { return r.topic && !isNaN(r.score) && r.created_at; });\n\nif (rows.length === 0) {\n  return [{ json: { chat_id: n.chat_id, reply: 'Not enough attempts yet. Send /practice and answer a few questions first.' } }];\n}\n\nconst now = Date.now();\nconst cutoff = now - 14 * 24 * 60 * 60 * 1000;\nconst recent = rows.filter(function (r) { return Date.parse(r.created_at) >= cutoff; });\n\nconst byTopic = {};\nrecent.forEach(function (r) {\n  if (!byTopic[r.topic]) { byTopic[r.topic] = { sum: 0, count: 0 }; }\n  byTopic[r.topic].sum += r.score;\n  byTopic[r.topic].count += 1;\n});\n\nconst topics = [];\nfor (const t in byTopic) { topics.push(t); }\n\nlet reply = '';\n\nif (n.command === 'weak') {\n  if (topics.length === 0) {\n    reply = 'Nothing in the last 14 days. Send /practice to start building a picture.';\n  } else {\n    topics.sort(function (a, b) { return (byTopic[a].sum / byTopic[a].count) - (byTopic[b].sum / byTopic[b].count); });\n    const worst = topics.slice(0, 3);\n    reply = 'Your weakest topics over the last 14 days:\\n\\n' + worst.map(function (t, i) {\n      const avg = byTopic[t].sum / byTopic[t].count;\n      return (i + 1) + '. ' + t + ' - ' + (Math.round(avg * 10) / 10) + '/5 over ' + byTopic[t].count + ' answer' + (byTopic[t].count === 1 ? '' : 's');\n    }).join('\\n') + '\\n\\nSend /practice weak to drill these.';\n  }\n} else {\n  // Streak: count back from today over distinct days with at least one attempt.\n  const days = {};\n  rows.forEach(function (r) { days[new Date(Date.parse(r.created_at)).toISOString().slice(0, 10)] = true; });\n  let streak = 0;\n  let cursor = new Date();\n  for (let i = 0; i < 365; i++) {\n    const key = cursor.toISOString().slice(0, 10);\n    if (days[key]) { streak += 1; }\n    else if (i > 0) { break; }\n    cursor = new Date(cursor.getTime() - 24 * 60 * 60 * 1000);\n  }\n\n  const total = rows.length;\n  const overall = rows.reduce(function (s, r) { return s + r.score; }, 0) / total;\n\n  const allTopics = [];\n  const byTopicAll = {};\n  rows.forEach(function (r) {\n    if (!byTopicAll[r.topic]) { byTopicAll[r.topic] = { sum: 0, count: 0 }; allTopics.push(r.topic); }\n    byTopicAll[r.topic].sum += r.score;\n    byTopicAll[r.topic].count += 1;\n  });\n  allTopics.sort(function (a, b) { return (byTopicAll[b].sum / byTopicAll[b].count) - (byTopicAll[a].sum / byTopicAll[a].count); });\n\n  reply = 'Your stats\\n\\nAnswers graded: ' + total + '\\nAverage score: ' + (Math.round(overall * 10) / 10) + '/5\\nCurrent streak: ' + streak + ' day' + (streak === 1 ? '' : 's') + '\\n\\nBy topic:\\n' + allTopics.map(function (t) {\n    const avg = byTopicAll[t].sum / byTopicAll[t].count;\n    return '- ' + t + ': ' + (Math.round(avg * 10) / 10) + '/5 (' + byTopicAll[t].count + ')';\n  }).join('\\n');\n}\n\nreturn [{ json: { chat_id: n.chat_id, reply: reply } }];"
+      },
+      "id": "713f2352-2b0c-4104-bfec-023b368d24d4",
+      "name": "Rank weak topics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "c791ba4e-5df1-48a0-a6ab-c8b0a80b02c9",
+      "name": "Send progress",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3056,
+        128
+      ],
+      "retryOnFail": true,
+      "webhookId": "da1ac46c-1cf2-4dc4-bd25-d8e923dcc67f",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxbeWKhCWoa7YIH",
+          "mode": "id"
+        },
+        "filterByFormula": "={{ $json.formula_session_open }}",
+        "options": {}
+      },
+      "id": "04d30d40-9f75-41a1-a43e-115c47fe0f88",
+      "name": "Load session for hint",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2608,
+        320
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblSYmhtV8WbgSiB1"
+        },
+        "filterByFormula": "={{ \"{question_id}='\" + (($json.fields || $json).question_id || 'none') + \"'\" }}",
+        "options": {}
+      },
+      "id": "7167093b-5a61-4654-8a15-76c031f1a51b",
+      "name": "Load question for hint",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2832,
+        320
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// A hint names one checklist point without giving the whole rubric away.\nconst n = $('Normalise message').first().json;\n\nlet sessions = [];\ntry {\n  sessions = $('Load session for hint').all().map(function (it) { return it.json.fields || it.json; }).filter(function (s) { return s.question_id; });\n} catch (e) { sessions = []; }\n\nif (sessions.length === 0) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'You have no question open. Send /practice to get one.' } }];\n}\n\nconst session = sessions[0];\nconst hintsUsed = Number(session.hints_used || 0);\n\nconst questions = $input.all().map(function (it) { return it.json.fields || it.json; }).filter(function (q) { return q.question_id; });\n\nif (questions.length === 0) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'I could not find that question any more. Send /practice for a new one.' } }];\n}\n\nlet keyPoints = [];\ntry {\n  const kp = questions[0].key_points;\n  keyPoints = typeof kp === 'string' ? JSON.parse(kp) : (kp || []);\n} catch (e) { keyPoints = []; }\n\nif (keyPoints.length === 0) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'No hints available for this one. Answer it as best you can.' } }];\n}\n\nif (hintsUsed >= keyPoints.length) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'You have had every hint for this question. Give it a go, or /skip.' } }];\n}\n\nconst point = keyPoints[hintsUsed];\nconst nextHints = hintsUsed + 1;\n\nreturn [{\n  json: {\n    has_session: true,\n    chat_id: n.chat_id,\n    question_id: session.question_id,\n    hints_used: nextHints,\n    started_at: session.started_at || new Date().toISOString(),\n    reply: 'Hint ' + nextHints + ' of ' + keyPoints.length + ':\\n\\nMake sure your answer does this - ' + point + '\\n\\nEach hint costs 0.5 off the score.'\n  }\n}];"
+      },
+      "id": "aa6e2dd0-4ac9-4fd2-a75c-b7091cbe6de1",
+      "name": "Build a hint",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "hs",
+              "leftValue": "={{ $json.has_session }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00585b27-71ef-4bfc-b9d7-b1cd3ddac9ac",
+      "name": "Hint has a session?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3280,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxbeWKhCWoa7YIH",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.chat_id }}",
+            "question_id": "={{ $json.question_id }}",
+            "status": "open",
+            "started_at": "={{ $json.started_at }}",
+            "hints_used": "={{ $json.hints_used }}"
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "18749cf5-1a70-4030-b4aa-13348ca9aeed",
+      "name": "Count the hint",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        3504,
+        224
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Normalise message\").first().json.chat_id }}",
+        "text": "={{ $(\"Build a hint\").first().json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "2a2c8b88-14ec-45f7-a1bc-1c192c70b048",
+      "name": "Send the hint",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3728,
+        320
+      ],
+      "retryOnFail": true,
+      "webhookId": "328d4861-f6ba-451e-b27e-59f997663e77",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "whisper-large-v3-turbo"
+            },
+            {
+              "name": "response_format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2f0a67f2-3ccd-4a23-8547-b427099e51da",
+      "name": "Transcribe the voice note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3056,
+        512
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "credentials": {
+        "groqApi": {
+          "id": "71sXdtRSdJtcudlL",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a",
+              "name": "answer",
+              "type": "string",
+              "value": "={{ $('Transcribe the voice note').first().json.text }}"
+            },
+            {
+              "id": "m",
+              "name": "input_mode",
+              "type": "string",
+              "value": "voice"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a92bd3c8-b50a-4136-9785-24e3a35b0e41",
+      "name": "Voice answer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3280,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a",
+              "name": "answer",
+              "value": "={{ $json.answer }}",
+              "type": "string"
+            },
+            {
+              "id": "m",
+              "name": "input_mode",
+              "value": "={{ $json.input_mode }}",
+              "type": "string"
+            },
+            {
+              "id": "c",
+              "name": "formula_session_open",
+              "value": "={{ $(\"Normalise message\").first().json.formula_session_open }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a87a3845-aa93-468b-890b-c0edddfb3f20",
+      "name": "Answer received",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3520,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a",
+              "name": "answer",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "m",
+              "name": "input_mode",
+              "value": "text",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b9325d6b-75fb-4489-bca5-751b9a315779",
+      "name": "Text answer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3280,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c",
+              "name": "chat_id",
+              "type": "string",
+              "value": "={{ $json.chat_id }}"
+            },
+            {
+              "id": "r",
+              "name": "reply",
+              "type": "string",
+              "value": "=Hi {{ $json.first_name }}, I am your interview practice coach.\n\n/setup - send me your CV and tell me about the job, so I grade you against the role you are actually going for\n\n/practice - a question, weighted toward your weak topics\n/practice behavioural - a question on one topic\n/practice weak - drill your three weakest topics\n/hint - a nudge on the question you have open (costs 0.5)\n/skip - a different question\n/weak - your three weakest topics over the last 14 days\n/stats - answers graded, average score and streak\n\nTopics: behavioural, motivation, technical, company-fit, competency, case\n\nAnswer by typing or by sending a voice note."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "baee5eb3-1192-4892-884a-2373cc2b200b",
+      "name": "Usage message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2608,
+        1232
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "a859f8b8-2b8b-436b-97f3-8dc4b2012003",
+      "name": "Send usage",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2832,
+        1232
+      ],
+      "retryOnFail": true,
+      "webhookId": "6ae3609f-e264-42c3-9adf-c8438f6d310f",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblxbeWKhCWoa7YIH"
+        },
+        "filterByFormula": "={{ $('Answer received').first().json.formula_session_open }}",
+        "options": {}
+      },
+      "id": "3223269c-52fa-4580-8966-9fe397ae5af5",
+      "name": "Find the open question",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        4176,
+        752
+      ],
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "so",
+              "leftValue": "={{ ($json.fields || $json).question_id }}",
+              "operator": {
+                "operation": "notEmpty",
+                "singleValue": true,
+                "type": "string"
+              }
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "ab354217-9464-4ac0-9a0a-23686082e174",
+      "name": "Session open?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4400,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblSYmhtV8WbgSiB1"
+        },
+        "filterByFormula": "={{ \"{question_id}='\" + (($json.fields || $json).question_id || 'none') + \"'\" }}",
+        "options": {}
+      },
+      "id": "875b74fe-026c-45d1-8280-915250f8f369",
+      "name": "Load the question",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        4624,
+        656
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "QMTj3TdvZHMNfhhu"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "answer": "={{ $('Answer received').first().json.answer }}",
+            "chat_id": "={{ $('Normalise message').first().json.chat_id }}",
+            "cv_text": "={{ ($json.fields || $json).cv_text || '' }}",
+            "hints_used": "={{ ($('Find the open question').first().json.fields || $('Find the open question').first().json).hints_used || 0 }}",
+            "input_mode": "={{ $('Answer received').first().json.input_mode }}",
+            "job_brief": "={{ ($json.fields || $json).job_brief || '' }}",
+            "key_points": "={{ ($('Load the question').first().json.fields || $('Load the question').first().json).key_points }}",
+            "question": "={{ ($('Load the question').first().json.fields || $('Load the question').first().json).text }}",
+            "question_id": "={{ ($('Load the question').first().json.fields || $('Load the question').first().json).question_id }}",
+            "topic": "={{ ($('Load the question').first().json.fields || $('Load the question').first().json).topic }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "question_id",
+              "displayName": "question_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "question",
+              "displayName": "question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "key_points",
+              "displayName": "key_points",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "answer",
+              "displayName": "answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "topic",
+              "displayName": "topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "hints_used",
+              "displayName": "hints_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            },
+            {
+              "id": "input_mode",
+              "displayName": "input_mode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "cv_text",
+              "displayName": "cv_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "job_brief",
+              "displayName": "job_brief",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "3462fff4-cded-44a5-b1e3-0e43ca71ef00",
+      "name": "Grade the answer",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        5072,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "g",
+              "leftValue": "={{ $json.graded }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b2ac2508-d5a0-492f-853d-50016809b87b",
+      "name": "Graded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5296,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblEuOAbzgvdns5KY",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $json.chat_id }}",
+            "question_id": "={{ $json.question_id }}",
+            "topic": "={{ $json.topic }}",
+            "answer": "={{ $json.answer }}",
+            "covered": "={{ $json.covered_json }}",
+            "score": "={{ $json.score }}",
+            "created_at": "={{ $json.created_at }}",
+            "due_at": "={{ $json.due_at }}",
+            "input_mode": "={{ $json.input_mode }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "3ddd7188-28da-4d3e-b6ea-f0e37ca90b1d",
+      "name": "Save the attempt",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        5520,
+        560
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxbeWKhCWoa7YIH",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "chat_id": "={{ $(\"Grade the answer\").first().json.chat_id }}",
+            "question_id": "={{ $(\"Grade the answer\").first().json.question_id }}",
+            "status": "closed",
+            "hints_used": 0
+          },
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "b4d6b0c5-950a-4556-8b42-3625c2fee11d",
+      "name": "Close the session",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        5744,
+        560
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Builds the feedback message and splits it if it would exceed Telegram's 4096 character limit.\nconst g = $('Grade the answer').first().json;\nconst n = $('Normalise message').first().json;\n\nconst lines = [];\nlines.push('Score: ' + g.score + '/5   (' + g.hits + ' of ' + g.total + ' key points covered)');\nlines.push('');\nlines.push('What you covered:');\nlines.push(g.met_block || '-');\nlines.push('');\nlines.push('What you missed:');\nlines.push(g.missed_block || '-');\n\nif (g.feedback) {\n  lines.push('');\n  lines.push(g.feedback);\n}\n\nif (Number(g.hint_penalty) > 0) {\n  lines.push('');\n  lines.push('(-' + g.hint_penalty + ' for hints used)');\n}\n\nif (g.due_at) {\n  lines.push('');\n  lines.push('This one will come back round for another go.');\n}\n\nlines.push('');\nlines.push('/practice for the next question, /weak to drill your weak spots, /stats for your progress.');\n\nconst full = lines.join('\\n');\n\nconst LIMIT = 3900;\nconst chunks = [];\nlet rest = full;\n\nwhile (rest.length > LIMIT) {\n  let cut = rest.lastIndexOf('\\n', LIMIT);\n  if (cut < LIMIT / 2) { cut = LIMIT; }\n  chunks.push(rest.slice(0, cut));\n  rest = rest.slice(cut).replace(/^\\n+/, '');\n}\nif (rest.length > 0) { chunks.push(rest); }\n\nreturn chunks.map(function (c) {\n  return { json: { chat_id: n.chat_id, reply: c } };\n});"
+      },
+      "id": "b3ac6a08-032d-4df0-aa46-3ffeff202b59",
+      "name": "Build the reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5968,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "bcfb4d98-24eb-434b-bfd3-3110c32699af",
+      "name": "Send the grade",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        6192,
+        560
+      ],
+      "retryOnFail": true,
+      "webhookId": "ac1512bf-0701-4025-ad9a-ccc72e70ae6e",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Normalise message\").first().json.chat_id }}",
+        "text": "={{ $json.feedback }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "92a2021f-baba-4cc7-a2ef-e98e48958eff",
+      "name": "Tell them grading failed",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        5520,
+        752
+      ],
+      "retryOnFail": true,
+      "webhookId": "4d5b56ff-aa75-45f8-b192-aabb23585ab5",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Normalise message\").first().json.chat_id }}",
+        "text": "You have no question open at the moment. Send /practice to get one, then answer it.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "6774574f-c13c-4d72-97a9-7ffc179e494d",
+      "name": "Ask them to start",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4624,
+        848
+      ],
+      "retryOnFail": true,
+      "webhookId": "2bbf8a8e-ed16-43d7-bc47-1b2ce2b94d27",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblrMcTtW0cxpBIDR"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [],
+          "value": {
+            "chat_id": "={{ $json.chat_id }}",
+            "setup_stage": "awaiting_cv",
+            "updated_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "381a03d1-8080-476c-881e-7fa4ff4fd334",
+      "name": "Start setup",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2624,
+        800
+      ],
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalise message').first().json.chat_id }}",
+        "text": "Let's set up your context.\n\nStep 1 of 2: send me your CV as a PDF file (attach it, don't paste the text).\n\nI'll use it, along with what you tell me about the role, to judge your answers against the job you're actually going for.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "34bbf458-c7a9-474e-9e59-eeabae88e0b4",
+      "name": "Ask for the CV",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2816,
+        800
+      ],
+      "webhookId": "602122d3-acc1-4dde-b431-5dc440d5112d",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "ee2ef230-c0a7-4a6b-88b1-2bfbe7456db8",
+      "name": "Extract the CV text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        2624,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblrMcTtW0cxpBIDR"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [],
+          "value": {
+            "chat_id": "={{ $('Normalise message').first().json.chat_id }}",
+            "cv_text": "={{ ($json.text || '').slice(0, 90000) }}",
+            "setup_stage": "awaiting_brief",
+            "updated_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "58a84ad6-8ce9-49b8-928d-fad1598c5d1a",
+      "name": "Save the CV",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        2816,
+        1008
+      ],
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalise message').first().json.chat_id }}",
+        "text": "Got your CV.\n\nStep 2 of 2: send me a voice note about the job. Who's the company, what's the role, and anything you know about what they care about.\n\nTalk for thirty seconds or so. The next voice note you send will be treated as this brief, and after that voice notes go back to being interview answers.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "ac185437-a5af-481a-8327-1a70e7bf60b2",
+      "name": "Ask for the brief",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3024,
+        1008
+      ],
+      "webhookId": "30a1ecb6-35b2-46c9-a6bc-3e34089eeb04",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblrMcTtW0cxpBIDR"
+        },
+        "filterByFormula": "={{ $('Normalise message').first().json.formula_profile }}",
+        "options": {}
+      },
+      "id": "8d78f0a9-6ae4-486e-aa1d-f1c2ce28622e",
+      "name": "Load profile for setup",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        3728,
+        656
+      ],
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "stage",
+              "leftValue": "={{ ($json.fields || $json).setup_stage }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "awaiting_brief"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "6fd3494c-7e74-4cb5-a947-f52e39c592e7",
+      "name": "Is this the job brief?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3952,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblrMcTtW0cxpBIDR"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "chat_id"
+          ],
+          "schema": [],
+          "value": {
+            "chat_id": "={{ $('Normalise message').first().json.chat_id }}",
+            "job_brief": "={{ $('Answer received').first().json.answer }}",
+            "setup_stage": "done",
+            "updated_at": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "dd6b7bda-df21-40c3-b2b6-b55c49fa0b45",
+      "name": "Save the brief",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        4176,
+        560
+      ],
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalise message').first().json.chat_id }}",
+        "text": "=Set up. Here's what I have about the role:\n\n{{ $('Answer received').first().json.answer }}\n\nFrom now on I'll judge your answers against this job and your CV. Send /practice to start, or /setup to redo this.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "318b6dea-a20c-4e4b-8529-9991f26ebd75",
+      "name": "Confirm setup",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4400,
+        560
+      ],
+      "webhookId": "842c5500-fced-42ae-b6f9-52e2ab3da038",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appxZ1PlURAM03UYT"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblrMcTtW0cxpBIDR"
+        },
+        "filterByFormula": "={{ $('Normalise message').first().json.formula_profile }}",
+        "options": {}
+      },
+      "id": "40eab729-5336-46e0-b450-a10ada5eaa6b",
+      "name": "Load profile for grading",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        4848,
+        656
+      ],
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Message received').first().json.message.voice.file_id || $('Message received').first().json.message.audio.file_id }}",
+        "additionalFields": {}
+      },
+      "id": "f1cb969b-893b-41f5-8215-c8dd1fbf909b",
+      "name": "Download the voice file",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2608,
+        512
+      ],
+      "webhookId": "d9202fbd-889a-4a4b-8608-f766a5e4decc",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Telegram names voice notes file_N.oga. Groq accepts the ogg container but rejects the\n// .oga extension by name, so the file is renamed before upload. Same bytes, same format.\nconst items = $input.all();\n\nreturn items.map(function (item) {\n  if (item.binary && item.binary.data) {\n    item.binary.data.fileName = 'voice.ogg';\n    item.binary.data.fileExtension = 'ogg';\n    item.binary.data.mimeType = 'audio/ogg';\n  }\n  return item;\n});"
+      },
+      "id": "5d48f2a2-9c06-45f6-9495-d92e55139535",
+      "name": "Rename for Groq",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        512
+      ]
+    }
+  ],
+  "pinData": {
+    "Message received": [
+      {
+        "json": {
+          "update_id": 76041961,
+          "message": {
+            "message_id": 78,
+            "from": {
+              "id": 8784636815,
+              "is_bot": false,
+              "first_name": "Alix",
+              "last_name": "Bauret",
+              "language_code": "fr"
+            },
+            "chat": {
+              "id": 8784636815,
+              "first_name": "Alix",
+              "last_name": "Bauret",
+              "type": "private"
+            },
+            "date": 1792586437,
+            "text": "/practice",
+            "entities": [
+              {
+                "offset": 0,
+                "length": 9,
+                "type": "bot_command"
+              }
+            ]
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Message received": {
+      "main": [
+        [
+          {
+            "node": "Normalise message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise message": {
+      "main": [
+        [
+          {
+            "node": "Allowed user?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Allowed user?": {
+      "main": [
+        [
+          {
+            "node": "Route by command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by command": {
+      "main": [
+        [
+          {
+            "node": "Load question bank",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load attempts for stats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load session for hint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download the voice file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text answer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start setup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract the CV text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Usage message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load question bank": {
+      "main": [
+        [
+          {
+            "node": "Load my attempts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load my attempts": {
+      "main": [
+        [
+          {
+            "node": "Load open session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load open session": {
+      "main": [
+        [
+          {
+            "node": "Pick a question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick a question": {
+      "main": [
+        [
+          {
+            "node": "Question found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question found?": {
+      "main": [
+        [
+          {
+            "node": "Open a session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send the question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open a session": {
+      "main": [
+        [
+          {
+            "node": "Send the question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load attempts for stats": {
+      "main": [
+        [
+          {
+            "node": "Rank weak topics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rank weak topics": {
+      "main": [
+        [
+          {
+            "node": "Send progress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load session for hint": {
+      "main": [
+        [
+          {
+            "node": "Load question for hint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load question for hint": {
+      "main": [
+        [
+          {
+            "node": "Build a hint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build a hint": {
+      "main": [
+        [
+          {
+            "node": "Hint has a session?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hint has a session?": {
+      "main": [
+        [
+          {
+            "node": "Count the hint",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send the hint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count the hint": {
+      "main": [
+        [
+          {
+            "node": "Send the hint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice answer": {
+      "main": [
+        [
+          {
+            "node": "Answer received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text answer": {
+      "main": [
+        [
+          {
+            "node": "Answer received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usage message": {
+      "main": [
+        [
+          {
+            "node": "Send usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find the open question": {
+      "main": [
+        [
+          {
+            "node": "Session open?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Session open?": {
+      "main": [
+        [
+          {
+            "node": "Load the question",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ask them to start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grade the answer": {
+      "main": [
+        [
+          {
+            "node": "Graded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graded?": {
+      "main": [
+        [
+          {
+            "node": "Save the attempt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tell them grading failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the attempt": {
+      "main": [
+        [
+          {
+            "node": "Close the session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close the session": {
+      "main": [
+        [
+          {
+            "node": "Build the reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build the reply": {
+      "main": [
+        [
+          {
+            "node": "Send the grade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start setup": {
+      "main": [
+        [
+          {
+            "node": "Ask for the CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract the CV text": {
+      "main": [
+        [
+          {
+            "node": "Save the CV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the CV": {
+      "main": [
+        [
+          {
+            "node": "Ask for the brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is this the job brief?": {
+      "main": [
+        [
+          {
+            "node": "Save the brief",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find the open question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save the brief": {
+      "main": [
+        [
+          {
+            "node": "Confirm setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load the question": {
+      "main": [
+        [
+          {
+            "node": "Load profile for grading",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load profile for grading": {
+      "main": [
+        [
+          {
+            "node": "Grade the answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load profile for setup": {
+      "main": [
+        [
+          {
+            "node": "Is this the job brief?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe the voice note": {
+      "main": [
+        [
+          {
+            "node": "Voice answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer received": {
+      "main": [
+        [
+          {
+            "node": "Load profile for setup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download the voice file": {
+      "main": [
+        [
+          {
+            "node": "Rename for Groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rename for Groq": {
+      "main": [
+        [
+          {
+            "node": "Transcribe the voice note",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "QpyUQ2QRWh7Sjdpd",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "d6ad809c-badc-4c5e-9799-9763f79f4bfd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "98d190acccbd812f275e259bab9b6c50cd673d175f23d6d8e59ab2601437dbed"
+  },
+  "nodeGroups": [],
+  "id": "X6FnJ5i2lMWh0k0O",
+  "tags": []
+}
