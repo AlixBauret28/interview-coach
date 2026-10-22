@@ -10,33 +10,33 @@
           "download": true
         }
       },
-      "id": "4f037278-c3aa-4c73-aac5-165367faa888",
+      "id": "f396a0c0-34db-4531-ac85-56dcbac8f354",
       "name": "Message received",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.5,
       "position": [
-        1712,
-        656
+        -1504,
+        320
       ],
       "webhookId": "c912b8cb-87bb-4b98-808a-94441dd7d57e",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// EDIT THIS LINE to restrict the bot. Empty array means anyone who finds the bot can use it.\nconst ALLOWED_CHAT_IDS = ['8784636815'];\n\nconst first = $input.first();\nconst msg = (first.json.message) || {};\nconst chat = msg.chat || {};\nconst chatId = String(chat.id || '');\nconst firstName = chat.first_name || 'there';\nconst text = String(msg.text || msg.caption || '').trim();\nconst hasVoice = Boolean(msg.voice || msg.audio);\nconst doc = msg.document || null;\n\nconst allowed = ALLOWED_CHAT_IDS.length === 0 || ALLOWED_CHAT_IDS.indexOf(chatId) !== -1;\n\nlet kind = 'text';\nlet command = '';\nlet arg = '';\n\nif (hasVoice) {\n  kind = 'voice';\n} else if (doc) {\n  kind = 'document';\n} else if (text.indexOf('/') === 0) {\n  kind = 'command';\n  const parts = text.slice(1).split(/\\s+/);\n  command = String(parts[0] || '').toLowerCase().split('@')[0];\n  arg = String(parts[1] || '').toLowerCase();\n} else if (text.length === 0) {\n  kind = 'other';\n}\n\n// Airtable formulas are built once here so every branch reuses the same escaped chat id.\nconst safeChat = chatId.replace(/'/g, '');\nconst formulaAttempts = \"{chat_id}='\" + safeChat + \"'\";\nconst formulaSessionOpen = \"AND({chat_id}='\" + safeChat + \"',{status}='open')\";\nconst formulaQuestionsActive = '{active}=1';\nconst formulaProfile = \"{chat_id}='\" + safeChat + \"'\";\n\n// The voice note or CV arrives as binary on the trigger item. Returning a fresh json\n// object would drop it, so it is carried through explicitly.\nreturn [{\n  json: {\n    chat_id: chatId,\n    first_name: firstName,\n    text: text,\n    kind: kind,\n    command: command,\n    arg: arg,\n    allowed: allowed,\n    doc_name: doc ? String(doc.file_name || '') : '',\n    doc_mime: doc ? String(doc.mime_type || '') : '',\n    formula_attempts: formulaAttempts,\n    formula_session_open: formulaSessionOpen,\n    formula_questions_active: formulaQuestionsActive,\n    formula_profile: formulaProfile\n  },\n  binary: first.binary\n}];"
+        "jsCode": "// EDIT THIS LINE to restrict the bot. Empty array means anyone who finds the bot can use it.\nconst ALLOWED_CHAT_IDS = [];\n\nconst first = $input.first();\nconst msg = (first.json.message) || {};\nconst chat = msg.chat || {};\nconst chatId = String(chat.id || '');\nconst firstName = chat.first_name || 'there';\nconst text = String(msg.text || msg.caption || '').trim();\nconst hasVoice = Boolean(msg.voice || msg.audio);\nconst doc = msg.document || null;\n\nconst allowed = ALLOWED_CHAT_IDS.length === 0 || ALLOWED_CHAT_IDS.indexOf(chatId) !== -1;\n\nlet kind = 'text';\nlet command = '';\nlet arg = '';\n\nif (hasVoice) {\n  kind = 'voice';\n} else if (doc) {\n  kind = 'document';\n} else if (text.indexOf('/') === 0) {\n  kind = 'command';\n  const parts = text.slice(1).split(/\\s+/);\n  command = String(parts[0] || '').toLowerCase().split('@')[0];\n  arg = String(parts[1] || '').toLowerCase();\n} else if (text.length === 0) {\n  kind = 'other';\n}\n\n// Airtable formulas are built once here so every branch reuses the same escaped chat id.\nconst safeChat = chatId.replace(/'/g, '');\nconst formulaAttempts = \"{chat_id}='\" + safeChat + \"'\";\nconst formulaSessionOpen = \"AND({chat_id}='\" + safeChat + \"',{status}='open')\";\nconst formulaQuestionsActive = '{active}=1';\nconst formulaProfile = \"{chat_id}='\" + safeChat + \"'\";\n\n// The voice note or CV arrives as binary on the trigger item. Returning a fresh json\n// object would drop it, so it is carried through explicitly.\nreturn [{\n  json: {\n    chat_id: chatId,\n    first_name: firstName,\n    text: text,\n    kind: kind,\n    command: command,\n    arg: arg,\n    allowed: allowed,\n    doc_name: doc ? String(doc.file_name || '') : '',\n    doc_mime: doc ? String(doc.mime_type || '') : '',\n    formula_attempts: formulaAttempts,\n    formula_session_open: formulaSessionOpen,\n    formula_questions_active: formulaQuestionsActive,\n    formula_profile: formulaProfile\n  },\n  binary: first.binary\n}];"
       },
-      "id": "755e0230-7e83-4cf8-a78c-95642281f538",
+      "id": "f6a202ba-1cbf-49b5-a850-d1e18cee1d41",
       "name": "Normalise message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1936,
-        656
+        -1280,
+        320
       ]
     },
     {
@@ -45,8 +45,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
+            "typeValidation": "loose",
+            "version": 1
           },
           "conditions": [
             {
@@ -63,13 +63,13 @@
         },
         "options": {}
       },
-      "id": "f519bf5c-e511-4ae9-9003-de782a7d2e67",
+      "id": "6be9386a-c576-4068-9e73-8105d4bea07c",
       "name": "Allowed user?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2160,
-        656
+        -1056,
+        320
       ]
     },
     {
@@ -78,12 +78,7 @@
           "values": [
             {
               "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
+                "combinator": "or",
                 "conditions": [
                   {
                     "id": "p1",
@@ -104,17 +99,17 @@
                     "rightValue": "skip"
                   }
                 ],
-                "combinator": "or"
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                }
               }
             },
             {
               "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
+                "combinator": "or",
                 "conditions": [
                   {
                     "id": "g1",
@@ -135,17 +130,17 @@
                     "rightValue": "stats"
                   }
                 ],
-                "combinator": "or"
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                }
               }
             },
             {
               "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
+                "combinator": "and",
                 "conditions": [
                   {
                     "id": "h1",
@@ -157,17 +152,17 @@
                     "rightValue": "hint"
                   }
                 ],
-                "combinator": "and"
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                }
               }
             },
             {
               "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
+                "combinator": "and",
                 "conditions": [
                   {
                     "id": "v1",
@@ -179,17 +174,17 @@
                     "rightValue": "voice"
                   }
                 ],
-                "combinator": "and"
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                }
               }
             },
             {
               "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
+                "combinator": "and",
                 "conditions": [
                   {
                     "id": "t1",
@@ -201,17 +196,17 @@
                     "rightValue": "text"
                   }
                 ],
-                "combinator": "and"
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                }
               }
             },
             {
               "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
+                "combinator": "and",
                 "conditions": [
                   {
                     "id": "s1",
@@ -223,17 +218,17 @@
                     "rightValue": "setup"
                   }
                 ],
-                "combinator": "and"
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                }
               }
             },
             {
               "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 2
-                },
+                "combinator": "and",
                 "conditions": [
                   {
                     "id": "d1",
@@ -245,7 +240,12 @@
                     "rightValue": "document"
                   }
                 ],
-                "combinator": "and"
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                }
               }
             }
           ]
@@ -255,25 +255,22 @@
           "renameFallbackOutput": "help"
         }
       },
-      "id": "1aaf4557-73ef-4876-a125-c1d409c9a003",
+      "id": "f440e9d3-2347-48c3-947e-90ca0e93949b",
       "name": "Route by command",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        2384,
-        560
+        -832,
+        224
       ]
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
-          "mode": "list",
-          "cachedResultName": "Interview Practice Coach ",
-          "cachedResultUrl": "https://airtable.com/appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J",
+          "mode": "id"
         },
         "table": {
           "__rl": true,
@@ -283,29 +280,28 @@
         "filterByFormula": "={{ $json.formula_questions_active }}",
         "options": {}
       },
-      "id": "559a8ae0-94f1-4eb6-bf84-2e625c77e46a",
+      "id": "0a132f69-574d-4d85-9a9b-eeee4079e13b",
       "name": "Load question bank",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        2608,
-        -64
+        -608,
+        -400
       ],
       "retryOnFail": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -316,31 +312,30 @@
         "filterByFormula": "={{ $(\"Normalise message\").first().json.formula_attempts }}",
         "options": {}
       },
-      "id": "dc9b4cf1-e6d6-4c8a-93ff-cc0a934ddc77",
+      "id": "37b89611-a4f1-4c62-8f95-fb400e12d510",
       "name": "Load my attempts",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        2832,
-        -64
+        -384,
+        -400
       ],
       "executeOnce": true,
       "retryOnFail": true,
       "alwaysOutputData": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -351,21 +346,21 @@
         "filterByFormula": "={{ $(\"Normalise message\").first().json.formula_session_open }}",
         "options": {}
       },
-      "id": "bfd81924-fd33-4de1-8308-36cd48fe399f",
+      "id": "162199f9-f7fb-4595-95df-fab15583a86a",
       "name": "Load open session",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        3056,
-        -64
+        -160,
+        -400
       ],
       "executeOnce": true,
       "retryOnFail": true,
       "alwaysOutputData": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -373,13 +368,13 @@
       "parameters": {
         "jsCode": "// Chooses the next question: weighted toward weak topics, skipping anything asked recently.\nconst n = $('Normalise message').first().json;\nconst TOPICS = ['behavioural', 'motivation', 'technical', 'company-fit', 'competency', 'case'];\n\nfunction flat(items) {\n  return items.map(function (it) {\n    const f = it.json.fields || it.json;\n    const out = {};\n    for (const k in f) { out[k] = f[k]; }\n    out._id = it.json.id || f.id;\n    return out;\n  });\n}\n\nconst questions = flat($('Load question bank').all()).filter(function (q) { return q.question_id && q.text; });\n\nlet attempts = [];\ntry { attempts = flat($('Load my attempts').all()).filter(function (a) { return a.question_id; }); } catch (e) { attempts = []; }\n\nlet sessions = [];\ntry { sessions = flat($('Load open session').all()).filter(function (s) { return s.question_id; }); } catch (e) { sessions = []; }\n\nconst openSession = sessions.length > 0 ? sessions[0] : null;\nconst skipping = n.command === 'skip';\nconst now = Date.now();\n\nif (questions.length === 0) {\n  return [{ json: { found: false, chat_id: n.chat_id, reply: 'The question bank is empty. Add some rows to the questions table in Airtable first.' } }];\n}\n\n// Work out which topic the user asked for, if any.\nconst arg = String(n.arg || '');\nlet wantedTopics = TOPICS.slice();\nlet drillingWeak = false;\n\nif (arg === 'weak') {\n  drillingWeak = true;\n} else if (arg.length > 0) {\n  if (TOPICS.indexOf(arg) === -1) {\n    return [{\n      json: {\n        found: false,\n        chat_id: n.chat_id,\n        reply: 'I do not know the topic \"' + arg + '\".\\n\\nTry one of these:\\n' + TOPICS.map(function (t) { return '/practice ' + t; }).join('\\n') + '\\n\\nOr just /practice for a mix, or /practice weak to drill your weakest topics.'\n      }\n    }];\n  }\n  wantedTopics = [arg];\n}\n\n// Average score per topic over the last 14 days, used for weighting.\nconst cutoff = now - 14 * 24 * 60 * 60 * 1000;\nconst recentAttempts = attempts.filter(function (a) {\n  const t = Date.parse(a.created_at || '');\n  return !isNaN(t) && t >= cutoff;\n});\n\nconst byTopic = {};\nrecentAttempts.forEach(function (a) {\n  const t = a.topic || 'unknown';\n  if (!byTopic[t]) { byTopic[t] = { sum: 0, count: 0 }; }\n  byTopic[t].sum += Number(a.score || 0);\n  byTopic[t].count += 1;\n});\n\nif (drillingWeak) {\n  const scored = TOPICS.filter(function (t) { return byTopic[t] && byTopic[t].count > 0; });\n  if (scored.length === 0) {\n    return [{ json: { found: false, chat_id: n.chat_id, reply: 'Not enough attempts yet to know your weak topics. Answer a few questions with /practice first.' } }];\n  }\n  scored.sort(function (a, b) { return (byTopic[a].sum / byTopic[a].count) - (byTopic[b].sum / byTopic[b].count); });\n  wantedTopics = scored.slice(0, 3);\n}\n\n// Questions answered in the last 5 attempts are excluded so the same one does not come straight back.\nconst sortedAttempts = attempts.slice().sort(function (a, b) { return Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0); });\nconst recentIds = sortedAttempts.slice(0, 5).map(function (a) { return a.question_id; });\n\n// Anything with a due date in the past is owed a repeat.\nconst dueIds = {};\nattempts.forEach(function (a) {\n  const d = Date.parse(a.due_at || '');\n  if (!isNaN(d) && d <= now) { dueIds[a.question_id] = true; }\n});\n\nlet pool = questions.filter(function (q) { return wantedTopics.indexOf(q.topic) !== -1; });\nif (pool.length === 0) { pool = questions.slice(); }\n\nlet fresh = pool.filter(function (q) { return recentIds.indexOf(q.question_id) === -1; });\nif (skipping && openSession) {\n  fresh = fresh.filter(function (q) { return q.question_id !== openSession.question_id; });\n}\nif (fresh.length === 0) { fresh = pool.slice(); }\n\n// Due questions win outright; otherwise weight by how weak the topic is.\nconst dueFirst = fresh.filter(function (q) { return dueIds[q.question_id]; });\nconst candidates = dueFirst.length > 0 ? dueFirst : fresh;\n\nconst weighted = candidates.map(function (q) {\n  const stat = byTopic[q.topic];\n  const avg = stat && stat.count > 0 ? stat.sum / stat.count : 2.5;\n  return { q: q, weight: (5 - avg) + Math.random() };\n});\nweighted.sort(function (a, b) { return b.weight - a.weight; });\n\nconst chosen = weighted[0].q;\nconst isDue = Boolean(dueIds[chosen.question_id]);\n\nlet lead = 'Here is your question';\nif (drillingWeak) { lead = 'Drilling your weak topics'; }\nelse if (skipping) { lead = 'New question'; }\nelse if (isDue) { lead = 'This one came back round'; }\n\nconst reply = lead + ' (' + chosen.topic + ', difficulty ' + (chosen.difficulty || 2) + ')\\n\\n' + chosen.text + '\\n\\nAnswer by text or voice note. /hint if you are stuck, /skip for a different one.';\n\nreturn [{\n  json: {\n    found: true,\n    chat_id: n.chat_id,\n    question_id: chosen.question_id,\n    topic: chosen.topic,\n    question_text: chosen.text,\n    difficulty: chosen.difficulty || 2,\n    reply: reply,\n    started_at: new Date().toISOString()\n  }\n}];"
       },
-      "id": "430e0d30-89f8-4339-97c1-95e0697afd63",
+      "id": "c8dd6829-2b22-4578-8161-a47cfa67a68d",
       "name": "Pick a question",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3280,
-        -64
+        64,
+        -400
       ]
     },
     {
@@ -388,8 +383,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
+            "typeValidation": "loose",
+            "version": 1
           },
           "conditions": [
             {
@@ -406,22 +401,21 @@
         },
         "options": {}
       },
-      "id": "3102a955-1d3a-4a6d-9d53-e7a3daf1fe7e",
+      "id": "a15fdd30-51b2-487e-a4d0-e292a3305dda",
       "name": "Question found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3504,
-        -64
+        288,
+        -400
       ]
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "upsert",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -445,19 +439,19 @@
         },
         "options": {}
       },
-      "id": "39eba9ba-a771-48f0-9557-9242522129c9",
+      "id": "be850c53-975c-4ccd-8b18-388bd06fe52f",
       "name": "Open a session",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        3728,
-        -144
+        512,
+        -480
       ],
       "retryOnFail": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -469,30 +463,29 @@
           "appendAttribution": false
         }
       },
-      "id": "0dc912fc-192e-46d9-8cc9-a05e6a6a4d8e",
+      "id": "8a344ca2-3fde-4658-a4a2-f19289c2db84",
       "name": "Send the question",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        3952,
-        -64
+        736,
+        -400
       ],
       "retryOnFail": true,
       "webhookId": "b9551fc0-2307-4361-b445-40a1354c1d7b",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -503,20 +496,20 @@
         "filterByFormula": "={{ $json.formula_attempts }}",
         "options": {}
       },
-      "id": "1b6a54fb-d8a0-4780-ad63-bf510400a018",
+      "id": "226738bc-9569-4a47-8356-04063d961089",
       "name": "Load attempts for stats",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        2608,
-        128
+        -608,
+        -208
       ],
       "retryOnFail": true,
       "alwaysOutputData": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -524,13 +517,13 @@
       "parameters": {
         "jsCode": "// Serves both /weak and /stats from one read of the attempts table.\nconst n = $('Normalise message').first().json;\n\nconst rows = $input.all().map(function (it) {\n  const f = it.json.fields || it.json;\n  return { topic: f.topic, score: Number(f.score), created_at: f.created_at, question_id: f.question_id };\n}).filter(function (r) { return r.topic && !isNaN(r.score) && r.created_at; });\n\nif (rows.length === 0) {\n  return [{ json: { chat_id: n.chat_id, reply: 'Not enough attempts yet. Send /practice and answer a few questions first.' } }];\n}\n\nconst now = Date.now();\nconst cutoff = now - 14 * 24 * 60 * 60 * 1000;\nconst recent = rows.filter(function (r) { return Date.parse(r.created_at) >= cutoff; });\n\nconst byTopic = {};\nrecent.forEach(function (r) {\n  if (!byTopic[r.topic]) { byTopic[r.topic] = { sum: 0, count: 0 }; }\n  byTopic[r.topic].sum += r.score;\n  byTopic[r.topic].count += 1;\n});\n\nconst topics = [];\nfor (const t in byTopic) { topics.push(t); }\n\nlet reply = '';\n\nif (n.command === 'weak') {\n  if (topics.length === 0) {\n    reply = 'Nothing in the last 14 days. Send /practice to start building a picture.';\n  } else {\n    topics.sort(function (a, b) { return (byTopic[a].sum / byTopic[a].count) - (byTopic[b].sum / byTopic[b].count); });\n    const worst = topics.slice(0, 3);\n    reply = 'Your weakest topics over the last 14 days:\\n\\n' + worst.map(function (t, i) {\n      const avg = byTopic[t].sum / byTopic[t].count;\n      return (i + 1) + '. ' + t + ' - ' + (Math.round(avg * 10) / 10) + '/5 over ' + byTopic[t].count + ' answer' + (byTopic[t].count === 1 ? '' : 's');\n    }).join('\\n') + '\\n\\nSend /practice weak to drill these.';\n  }\n} else {\n  // Streak: count back from today over distinct days with at least one attempt.\n  const days = {};\n  rows.forEach(function (r) { days[new Date(Date.parse(r.created_at)).toISOString().slice(0, 10)] = true; });\n  let streak = 0;\n  let cursor = new Date();\n  for (let i = 0; i < 365; i++) {\n    const key = cursor.toISOString().slice(0, 10);\n    if (days[key]) { streak += 1; }\n    else if (i > 0) { break; }\n    cursor = new Date(cursor.getTime() - 24 * 60 * 60 * 1000);\n  }\n\n  const total = rows.length;\n  const overall = rows.reduce(function (s, r) { return s + r.score; }, 0) / total;\n\n  const allTopics = [];\n  const byTopicAll = {};\n  rows.forEach(function (r) {\n    if (!byTopicAll[r.topic]) { byTopicAll[r.topic] = { sum: 0, count: 0 }; allTopics.push(r.topic); }\n    byTopicAll[r.topic].sum += r.score;\n    byTopicAll[r.topic].count += 1;\n  });\n  allTopics.sort(function (a, b) { return (byTopicAll[b].sum / byTopicAll[b].count) - (byTopicAll[a].sum / byTopicAll[a].count); });\n\n  reply = 'Your stats\\n\\nAnswers graded: ' + total + '\\nAverage score: ' + (Math.round(overall * 10) / 10) + '/5\\nCurrent streak: ' + streak + ' day' + (streak === 1 ? '' : 's') + '\\n\\nBy topic:\\n' + allTopics.map(function (t) {\n    const avg = byTopicAll[t].sum / byTopicAll[t].count;\n    return '- ' + t + ': ' + (Math.round(avg * 10) / 10) + '/5 (' + byTopicAll[t].count + ')';\n  }).join('\\n');\n}\n\nreturn [{ json: { chat_id: n.chat_id, reply: reply } }];"
       },
-      "id": "713f2352-2b0c-4104-bfec-023b368d24d4",
+      "id": "7be474d8-717e-4fdc-88f5-35561200ee2a",
       "name": "Rank weak topics",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2832,
-        128
+        -384,
+        -208
       ]
     },
     {
@@ -541,30 +534,29 @@
           "appendAttribution": false
         }
       },
-      "id": "c791ba4e-5df1-48a0-a6ab-c8b0a80b02c9",
+      "id": "b0287152-4953-481c-8639-1d4951d60cb9",
       "name": "Send progress",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        3056,
-        128
+        -160,
+        -208
       ],
       "retryOnFail": true,
       "webhookId": "da1ac46c-1cf2-4dc4-bd25-d8e923dcc67f",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -575,31 +567,30 @@
         "filterByFormula": "={{ $json.formula_session_open }}",
         "options": {}
       },
-      "id": "04d30d40-9f75-41a1-a43e-115c47fe0f88",
+      "id": "f50c95a9-968d-48b4-9044-ab5bf3d1a561",
       "name": "Load session for hint",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        2608,
-        320
+        -608,
+        -16
       ],
       "retryOnFail": true,
       "alwaysOutputData": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -609,20 +600,20 @@
         "filterByFormula": "={{ \"{question_id}='\" + (($json.fields || $json).question_id || 'none') + \"'\" }}",
         "options": {}
       },
-      "id": "7167093b-5a61-4654-8a15-76c031f1a51b",
+      "id": "f661a5ef-940b-4562-ab5b-122c69333b60",
       "name": "Load question for hint",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        2832,
-        320
+        -384,
+        -16
       ],
       "retryOnFail": true,
       "alwaysOutputData": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -630,13 +621,13 @@
       "parameters": {
         "jsCode": "// A hint names one checklist point without giving the whole rubric away.\nconst n = $('Normalise message').first().json;\n\nlet sessions = [];\ntry {\n  sessions = $('Load session for hint').all().map(function (it) { return it.json.fields || it.json; }).filter(function (s) { return s.question_id; });\n} catch (e) { sessions = []; }\n\nif (sessions.length === 0) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'You have no question open. Send /practice to get one.' } }];\n}\n\nconst session = sessions[0];\nconst hintsUsed = Number(session.hints_used || 0);\n\nconst questions = $input.all().map(function (it) { return it.json.fields || it.json; }).filter(function (q) { return q.question_id; });\n\nif (questions.length === 0) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'I could not find that question any more. Send /practice for a new one.' } }];\n}\n\nlet keyPoints = [];\ntry {\n  const kp = questions[0].key_points;\n  keyPoints = typeof kp === 'string' ? JSON.parse(kp) : (kp || []);\n} catch (e) { keyPoints = []; }\n\nif (keyPoints.length === 0) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'No hints available for this one. Answer it as best you can.' } }];\n}\n\nif (hintsUsed >= keyPoints.length) {\n  return [{ json: { has_session: false, chat_id: n.chat_id, reply: 'You have had every hint for this question. Give it a go, or /skip.' } }];\n}\n\nconst point = keyPoints[hintsUsed];\nconst nextHints = hintsUsed + 1;\n\nreturn [{\n  json: {\n    has_session: true,\n    chat_id: n.chat_id,\n    question_id: session.question_id,\n    hints_used: nextHints,\n    started_at: session.started_at || new Date().toISOString(),\n    reply: 'Hint ' + nextHints + ' of ' + keyPoints.length + ':\\n\\nMake sure your answer does this - ' + point + '\\n\\nEach hint costs 0.5 off the score.'\n  }\n}];"
       },
-      "id": "aa6e2dd0-4ac9-4fd2-a75c-b7091cbe6de1",
+      "id": "74096b28-ff48-4e6f-bc6d-858cc40f2dcc",
       "name": "Build a hint",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3056,
-        320
+        -160,
+        -16
       ]
     },
     {
@@ -663,22 +654,21 @@
         },
         "options": {}
       },
-      "id": "00585b27-71ef-4bfc-b9d7-b1cd3ddac9ac",
+      "id": "e89917ee-37d8-4f8c-b110-089871943a2c",
       "name": "Hint has a session?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3280,
-        320
+        64,
+        -16
       ]
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "upsert",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -702,19 +692,19 @@
         },
         "options": {}
       },
-      "id": "18749cf5-1a70-4030-b4aa-13348ca9aeed",
+      "id": "01b2ff48-44ae-4314-be0c-29b00fad0179",
       "name": "Count the hint",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        3504,
-        224
+        288,
+        -112
       ],
       "retryOnFail": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -726,20 +716,20 @@
           "appendAttribution": false
         }
       },
-      "id": "2a2c8b88-14ec-45f7-a1bc-1c192c70b048",
+      "id": "95f9765d-4888-403e-abfd-2735ad9c3cac",
       "name": "Send the hint",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        3728,
-        320
+        512,
+        -16
       ],
       "retryOnFail": true,
       "webhookId": "328d4861-f6ba-451e-b27e-59f997663e77",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
@@ -770,19 +760,19 @@
         },
         "options": {}
       },
-      "id": "2f0a67f2-3ccd-4a23-8547-b427099e51da",
+      "id": "1ccd8926-988e-4b5e-b808-df3a217ae23c",
       "name": "Transcribe the voice note",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3056,
-        512
+        -160,
+        224
       ],
       "retryOnFail": true,
       "maxTries": 3,
       "credentials": {
         "groqApi": {
-          "id": "71sXdtRSdJtcudlL",
+          "id": "nQ5hQiyH67THxEA3",
           "name": "Groq account"
         }
       }
@@ -807,13 +797,13 @@
         },
         "options": {}
       },
-      "id": "a92bd3c8-b50a-4136-9785-24e3a35b0e41",
+      "id": "4f41d34b-0c19-44db-ab75-92ffed8ed5b7",
       "name": "Voice answer",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3280,
-        512
+        64,
+        224
       ]
     },
     {
@@ -842,13 +832,13 @@
         },
         "options": {}
       },
-      "id": "a87a3845-aa93-468b-890b-c0edddfb3f20",
+      "id": "5cb5e0de-1bb9-4d46-96eb-b664d75936b2",
       "name": "Answer received",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3520,
-        592
+        288,
+        320
       ]
     },
     {
@@ -871,13 +861,13 @@
         },
         "options": {}
       },
-      "id": "b9325d6b-75fb-4489-bca5-751b9a315779",
+      "id": "e112c18b-b2b6-4d4a-a240-99982628f43a",
       "name": "Text answer",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3280,
-        672
+        64,
+        416
       ]
     },
     {
@@ -900,13 +890,13 @@
         },
         "options": {}
       },
-      "id": "baee5eb3-1192-4892-884a-2373cc2b200b",
+      "id": "0b2084f2-4bbd-47bf-bc9a-d592537db566",
       "name": "Usage message",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2608,
-        1232
+        -608,
+        560
       ]
     },
     {
@@ -917,31 +907,30 @@
           "appendAttribution": false
         }
       },
-      "id": "a859f8b8-2b8b-436b-97f3-8dc4b2012003",
+      "id": "336fdf66-27e2-4e76-9e43-1cf53579ea48",
       "name": "Send usage",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        2832,
-        1232
+        -384,
+        560
       ],
       "retryOnFail": true,
       "webhookId": "6ae3609f-e264-42c3-9adf-c8438f6d310f",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -951,20 +940,20 @@
         "filterByFormula": "={{ $('Answer received').first().json.formula_session_open }}",
         "options": {}
       },
-      "id": "3223269c-52fa-4580-8966-9fe397ae5af5",
+      "id": "0a2c42eb-2d6b-4454-9a81-a2dd4ecfb685",
       "name": "Find the open question",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        4176,
-        752
+        960,
+        416
       ],
       "retryOnFail": true,
       "alwaysOutputData": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -992,23 +981,22 @@
         },
         "options": {}
       },
-      "id": "ab354217-9464-4ac0-9a0a-23686082e174",
+      "id": "635d31ed-a578-4b72-a78b-17db8ab02d91",
       "name": "Session open?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        4400,
-        752
+        1184,
+        416
       ]
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -1018,19 +1006,19 @@
         "filterByFormula": "={{ \"{question_id}='\" + (($json.fields || $json).question_id || 'none') + \"'\" }}",
         "options": {}
       },
-      "id": "875b74fe-026c-45d1-8280-915250f8f369",
+      "id": "d40eb67d-3859-4e24-9172-916cb1b2101f",
       "name": "Load the question",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        4624,
-        656
+        1408,
+        320
       ],
       "retryOnFail": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -1039,10 +1027,12 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "QMTj3TdvZHMNfhhu"
+          "value": "AGv8amixNZvVXReS"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "schema": [],
           "value": {
             "answer": "={{ $('Answer received').first().json.answer }}",
             "chat_id": "={{ $('Normalise message').first().json.chat_id }}",
@@ -1054,112 +1044,17 @@
             "question": "={{ ($('Load the question').first().json.fields || $('Load the question').first().json).text }}",
             "question_id": "={{ ($('Load the question').first().json.fields || $('Load the question').first().json).question_id }}",
             "topic": "={{ ($('Load the question').first().json.fields || $('Load the question').first().json).topic }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "chat_id",
-              "displayName": "chat_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "question_id",
-              "displayName": "question_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "question",
-              "displayName": "question",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "key_points",
-              "displayName": "key_points",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "answer",
-              "displayName": "answer",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "topic",
-              "displayName": "topic",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "hints_used",
-              "displayName": "hints_used",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "number"
-            },
-            {
-              "id": "input_mode",
-              "displayName": "input_mode",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "cv_text",
-              "displayName": "cv_text",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "job_brief",
-              "displayName": "job_brief",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
+          }
         },
         "options": {}
       },
-      "id": "3462fff4-cded-44a5-b1e3-0e43ca71ef00",
+      "id": "868bb413-3104-48f6-91ec-50a26fbc95e7",
       "name": "Grade the answer",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.3,
       "position": [
-        5072,
-        656
+        1856,
+        320
       ]
     },
     {
@@ -1186,22 +1081,21 @@
         },
         "options": {}
       },
-      "id": "b2ac2508-d5a0-492f-853d-50016809b87b",
+      "id": "665de690-3209-4320-92f5-ab2469125776",
       "name": "Graded?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        5296,
-        656
+        2080,
+        320
       ]
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "create",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -1227,29 +1121,28 @@
         },
         "options": {}
       },
-      "id": "3ddd7188-28da-4d3e-b6ea-f0e37ca90b1d",
+      "id": "56e85a0c-dc41-40ca-89a2-347916085eae",
       "name": "Save the attempt",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        5520,
-        560
+        2304,
+        224
       ],
       "retryOnFail": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "upsert",
         "base": {
           "__rl": true,
-          "value": "appxZ1PlURAM03UYT",
+          "value": "appr59qs95TiHsX4J",
           "mode": "id"
         },
         "table": {
@@ -1272,19 +1165,19 @@
         },
         "options": {}
       },
-      "id": "b4d6b0c5-950a-4556-8b42-3625c2fee11d",
+      "id": "d09c0eae-d1b8-4d72-9e4c-a2ad452cf469",
       "name": "Close the session",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        5744,
-        560
+        2528,
+        224
       ],
       "retryOnFail": true,
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -1292,13 +1185,13 @@
       "parameters": {
         "jsCode": "// Builds the feedback message and splits it if it would exceed Telegram's 4096 character limit.\nconst g = $('Grade the answer').first().json;\nconst n = $('Normalise message').first().json;\n\nconst lines = [];\nlines.push('Score: ' + g.score + '/5   (' + g.hits + ' of ' + g.total + ' key points covered)');\nlines.push('');\nlines.push('What you covered:');\nlines.push(g.met_block || '-');\nlines.push('');\nlines.push('What you missed:');\nlines.push(g.missed_block || '-');\n\nif (g.feedback) {\n  lines.push('');\n  lines.push(g.feedback);\n}\n\nif (Number(g.hint_penalty) > 0) {\n  lines.push('');\n  lines.push('(-' + g.hint_penalty + ' for hints used)');\n}\n\nif (g.due_at) {\n  lines.push('');\n  lines.push('This one will come back round for another go.');\n}\n\nlines.push('');\nlines.push('/practice for the next question, /weak to drill your weak spots, /stats for your progress.');\n\nconst full = lines.join('\\n');\n\nconst LIMIT = 3900;\nconst chunks = [];\nlet rest = full;\n\nwhile (rest.length > LIMIT) {\n  let cut = rest.lastIndexOf('\\n', LIMIT);\n  if (cut < LIMIT / 2) { cut = LIMIT; }\n  chunks.push(rest.slice(0, cut));\n  rest = rest.slice(cut).replace(/^\\n+/, '');\n}\nif (rest.length > 0) { chunks.push(rest); }\n\nreturn chunks.map(function (c) {\n  return { json: { chat_id: n.chat_id, reply: c } };\n});"
       },
-      "id": "b3ac6a08-032d-4df0-aa46-3ffeff202b59",
+      "id": "3a23a60c-fe0d-459f-b788-16ea22bddfe3",
       "name": "Build the reply",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        5968,
-        560
+        2752,
+        224
       ]
     },
     {
@@ -1309,20 +1202,20 @@
           "appendAttribution": false
         }
       },
-      "id": "bcfb4d98-24eb-434b-bfd3-3110c32699af",
+      "id": "86e13834-20a9-496e-8f32-ffd2fd292c59",
       "name": "Send the grade",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        6192,
-        560
+        2976,
+        224
       ],
       "retryOnFail": true,
       "webhookId": "ac1512bf-0701-4025-ad9a-ccc72e70ae6e",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
@@ -1334,20 +1227,20 @@
           "appendAttribution": false
         }
       },
-      "id": "92a2021f-baba-4cc7-a2ef-e98e48958eff",
+      "id": "d0131ff6-cadc-49a2-8402-93be5e21a12d",
       "name": "Tell them grading failed",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        5520,
-        752
+        2304,
+        416
       ],
       "retryOnFail": true,
       "webhookId": "4d5b56ff-aa75-45f8-b192-aabb23585ab5",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
@@ -1359,31 +1252,72 @@
           "appendAttribution": false
         }
       },
-      "id": "6774574f-c13c-4d72-97a9-7ffc179e494d",
+      "id": "6353b07c-9e1f-41f8-b0fe-c4656056c8e6",
       "name": "Ask them to start",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        4624,
-        848
+        1408,
+        512
       ],
       "retryOnFail": true,
       "webhookId": "2bbf8a8e-ed16-43d7-bc47-1b2ce2b94d27",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
+        "content": "## Who can use the bot\n\nThe allowlist lives at the top of **Normalise message**. Leave it empty while testing, then add chat ids before the demo.\n\nThis node also builds every Airtable filter formula once, so the chat id is escaped in a single place.",
+        "color": 3
+      },
+      "id": "9497d69a-fdf7-47d0-8446-04058bc3564f",
+      "name": "Sticky Note 6680e01d",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        112,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## /practice and /skip\n\nReads the bank, the history and any open session, then picks: anything overdue first, otherwise weighted toward weak topics, never repeating the last five.\n\n**Open a session** is an upsert keyed on chat id, so a second /practice replaces the open question instead of leaving two.",
+        "color": 5
+      },
+      "id": "0effb12b-318d-4232-85f5-057af67b79e8",
+      "name": "Sticky Note 14229052",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        112,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Answering\n\nVoice and text converge on **Answer received**, so everything downstream reads one node whichever way the answer arrived.\n\nThe grade comes from the sub-workflow. Nothing is written to **attempts** unless grading actually succeeded.",
+        "color": 6
+      },
+      "id": "15483b2b-27a2-4c1d-a89b-52849bde2261",
+      "name": "Sticky Note 4c73c83c",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        112,
+        816
+      ]
+    },
+    {
+      "parameters": {
         "operation": "upsert",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -1404,18 +1338,18 @@
         },
         "options": {}
       },
-      "id": "381a03d1-8080-476c-881e-7fa4ff4fd334",
+      "id": "6c0c96f2-1026-417b-97d2-28c3696645cb",
       "name": "Start setup",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        2624,
-        800
+        -608,
+        752
       ],
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -1427,19 +1361,19 @@
           "appendAttribution": false
         }
       },
-      "id": "34bbf458-c7a9-474e-9e59-eeabae88e0b4",
+      "id": "e318a2f7-6af8-46fc-a91a-33081fc338c8",
       "name": "Ask for the CV",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        2816,
-        800
+        -384,
+        752
       ],
       "webhookId": "602122d3-acc1-4dde-b431-5dc440d5112d",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
@@ -1448,23 +1382,22 @@
         "operation": "pdf",
         "options": {}
       },
-      "id": "ee2ef230-c0a7-4a6b-88b1-2bfbe7456db8",
+      "id": "437f8673-ab49-45e9-b540-e3761c4ffaa4",
       "name": "Extract the CV text",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        2624,
-        1008
+        -608,
+        944
       ]
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "upsert",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -1486,18 +1419,18 @@
         },
         "options": {}
       },
-      "id": "58a84ad6-8ce9-49b8-928d-fad1598c5d1a",
+      "id": "522194b7-41eb-4ea6-94aa-60f9d7e1096f",
       "name": "Save the CV",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        2816,
-        1008
+        -384,
+        944
       ],
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -1509,30 +1442,29 @@
           "appendAttribution": false
         }
       },
-      "id": "ac185437-a5af-481a-8327-1a70e7bf60b2",
+      "id": "c5bbb85c-3f08-43c3-808a-4dfa3c6ed8dd",
       "name": "Ask for the brief",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        3024,
-        1008
+        -160,
+        944
       ],
       "webhookId": "30a1ecb6-35b2-46c9-a6bc-3e34089eeb04",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -1542,18 +1474,18 @@
         "filterByFormula": "={{ $('Normalise message').first().json.formula_profile }}",
         "options": {}
       },
-      "id": "8d78f0a9-6ae4-486e-aa1d-f1c2ce28622e",
+      "id": "bd64edb9-7ce2-4f4f-aeb1-ad6df0965e3d",
       "name": "Load profile for setup",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        3728,
-        656
+        512,
+        320
       ],
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -1581,23 +1513,22 @@
         },
         "options": {}
       },
-      "id": "6fd3494c-7e74-4cb5-a947-f52e39c592e7",
+      "id": "20bde88c-9365-4af7-8997-9bc6c09438a2",
       "name": "Is this the job brief?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3952,
-        656
+        736,
+        320
       ]
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "upsert",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -1619,18 +1550,18 @@
         },
         "options": {}
       },
-      "id": "dd6b7bda-df21-40c3-b2b6-b55c49fa0b45",
+      "id": "053e1e8c-7f25-4d27-ab8a-896c5c787939",
       "name": "Save the brief",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        4176,
-        560
+        960,
+        224
       ],
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -1642,30 +1573,29 @@
           "appendAttribution": false
         }
       },
-      "id": "318b6dea-a20c-4e4b-8529-9991f26ebd75",
+      "id": "ee97c2f6-ef78-41da-b66d-660f97883dc2",
       "name": "Confirm setup",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        4400,
-        560
+        1184,
+        224
       ],
       "webhookId": "842c5500-fced-42ae-b6f9-52e2ab3da038",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
     {
       "parameters": {
-        "authentication": "airtableOAuth2Api",
         "operation": "search",
         "base": {
           "__rl": true,
           "mode": "id",
-          "value": "appxZ1PlURAM03UYT"
+          "value": "appr59qs95TiHsX4J"
         },
         "table": {
           "__rl": true,
@@ -1675,18 +1605,18 @@
         "filterByFormula": "={{ $('Normalise message').first().json.formula_profile }}",
         "options": {}
       },
-      "id": "40eab729-5336-46e0-b450-a10ada5eaa6b",
+      "id": "3d7109d1-0e0f-4f25-a029-30383f8ed037",
       "name": "Load profile for grading",
       "type": "n8n-nodes-base.airtable",
       "typeVersion": 2.2,
       "position": [
-        4848,
-        656
+        1632,
+        320
       ],
       "credentials": {
-        "airtableOAuth2Api": {
-          "id": "DxKTtryk3ycr8jJ0",
-          "name": "Airtable account 2"
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
     },
@@ -1696,19 +1626,19 @@
         "fileId": "={{ $('Message received').first().json.message.voice.file_id || $('Message received').first().json.message.audio.file_id }}",
         "additionalFields": {}
       },
-      "id": "f1cb969b-893b-41f5-8215-c8dd1fbf909b",
+      "id": "916070b8-1aa1-408a-a7ec-ce86bdcc1bcc",
       "name": "Download the voice file",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        2608,
-        512
+        -608,
+        224
       ],
       "webhookId": "d9202fbd-889a-4a4b-8608-f766a5e4decc",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
@@ -1716,53 +1646,135 @@
       "parameters": {
         "jsCode": "// Telegram names voice notes file_N.oga. Groq accepts the ogg container but rejects the\n// .oga extension by name, so the file is renamed before upload. Same bytes, same format.\nconst items = $input.all();\n\nreturn items.map(function (item) {\n  if (item.binary && item.binary.data) {\n    item.binary.data.fileName = 'voice.ogg';\n    item.binary.data.fileExtension = 'ogg';\n    item.binary.data.mimeType = 'audio/ogg';\n  }\n  return item;\n});"
       },
-      "id": "5d48f2a2-9c06-45f6-9495-d92e55139535",
+      "id": "22cdd2d3-4894-48d3-8ee7-94b4e1f318ff",
       "name": "Rename for Groq",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2832,
-        512
+        -384,
+        224
       ]
-    }
-  ],
-  "pinData": {
-    "Message received": [
-      {
-        "json": {
-          "update_id": 76041961,
-          "message": {
-            "message_id": 78,
-            "from": {
-              "id": 8784636815,
-              "is_bot": false,
-              "first_name": "Alix",
-              "last_name": "Bauret",
-              "language_code": "fr"
-            },
-            "chat": {
-              "id": 8784636815,
-              "first_name": "Alix",
-              "last_name": "Bauret",
-              "type": "private"
-            },
-            "date": 1792586437,
-            "text": "/practice",
-            "entities": [
-              {
-                "offset": 0,
-                "length": 9,
-                "type": "bot_command"
-              }
-            ]
-          }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "bcbaa9c1-af00-4f28-9b3a-6654dd6bce2a",
+      "name": "Every evening at 18:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1504,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appr59qs95TiHsX4J"
         },
-        "pairedItem": {
-          "item": 0
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblEuOAbzgvdns5KY"
+        },
+        "options": {}
+      },
+      "id": "d02ac4a2-3f34-4143-a5e1-eda467c43e3d",
+      "name": "Load every attempt",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        1504
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
         }
       }
-    ]
-  },
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "mode": "id",
+          "value": "appr59qs95TiHsX4J"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tblSYmhtV8WbgSiB1"
+        },
+        "filterByFormula": "{active}=1",
+        "options": {}
+      },
+      "id": "02bc6ce0-d78b-453c-b20d-31d6d8a7f33a",
+      "name": "Load the question bank",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -1056,
+        1504
+      ],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "Yrs9HbKYI2S9bAPU",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One reminder per person who has used the bot before but has not practised today.\nfunction flat(items) {\n  return items.map(function (it) {\n    const f = it.json.fields || it.json;\n    const out = {};\n    for (const k in f) { out[k] = f[k]; }\n    return out;\n  });\n}\n\nconst attempts = flat($('Load every attempt').all()).filter(function (a) { return a.chat_id && a.created_at; });\nconst questions = flat($('Load the question bank').all()).filter(function (q) { return q.question_id && q.text; });\n\nconst questionText = {};\nquestions.forEach(function (q) { questionText[q.question_id] = q.text; });\n\nconst now = new Date();\nconst today = now.toISOString().slice(0, 10);\n\n// Group every attempt by the chat it came from.\nconst byChat = {};\nconst chatIds = [];\nattempts.forEach(function (a) {\n  const id = String(a.chat_id);\n  if (!byChat[id]) { byChat[id] = []; chatIds.push(id); }\n  byChat[id].push(a);\n});\n\nconst out = [];\n\nchatIds.forEach(function (id) {\n  const rows = byChat[id];\n\n  const days = {};\n  rows.forEach(function (r) {\n    const t = Date.parse(r.created_at);\n    if (!isNaN(t)) { days[new Date(t).toISOString().slice(0, 10)] = true; }\n  });\n\n  // Already practised today, so leave them alone.\n  if (days[today]) { return; }\n\n  // Streak counts back from yesterday, since today is still empty.\n  let streak = 0;\n  let cursor = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n  for (let i = 0; i < 365; i++) {\n    const key = cursor.toISOString().slice(0, 10);\n    if (!days[key]) { break; }\n    streak += 1;\n    cursor = new Date(cursor.getTime() - 24 * 60 * 60 * 1000);\n  }\n\n  // Anyone dormant for more than a fortnight gets left in peace.\n  let mostRecent = 0;\n  rows.forEach(function (r) {\n    const t = Date.parse(r.created_at);\n    if (!isNaN(t) && t > mostRecent) { mostRecent = t; }\n  });\n  if (now.getTime() - mostRecent > 14 * 24 * 60 * 60 * 1000) { return; }\n\n  const due = rows.filter(function (r) {\n    const d = Date.parse(r.due_at || '');\n    return !isNaN(d) && d <= now.getTime();\n  });\n\n  const lines = [];\n\n  if (streak > 0) {\n    lines.push('You are on a ' + streak + ' day streak. One question keeps it alive.');\n  } else {\n    lines.push('No practice today. One question is enough to start again.');\n  }\n\n  if (due.length > 0) {\n    const pick = due[0];\n    const text = questionText[pick.question_id];\n    if (text) {\n      lines.push('');\n      lines.push('Due for another go:');\n      lines.push(text);\n    }\n  }\n\n  lines.push('');\n  lines.push('Send /practice when you are ready.');\n\n  out.push({ json: { chat_id: id, reply: lines.join('\\n') } });\n});\n\nreturn out;"
+      },
+      "id": "e42f9535-19b9-4779-9d19-2219d2c4c787",
+      "name": "Who needs a nudge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "65a0ae51-33c3-42ef-b8e8-3020eaab0dce",
+      "name": "Send the nudge",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -624,
+        1504
+      ],
+      "webhookId": "3410993d-0c8e-4a95-a92f-335d10c6d855",
+      "credentials": {
+        "telegramApi": {
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
   "connections": {
     "Message received": {
       "main": [
@@ -2276,6 +2288,50 @@
           }
         ]
       ]
+    },
+    "Every evening at 18:00": {
+      "main": [
+        [
+          {
+            "node": "Load every attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load every attempt": {
+      "main": [
+        [
+          {
+            "node": "Load the question bank",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load the question bank": {
+      "main": [
+        [
+          {
+            "node": "Who needs a nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Who needs a nudge": {
+      "main": [
+        [
+          {
+            "node": "Send the nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -2283,16 +2339,15 @@
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": true,
-    "timeSavedMode": "fixed",
-    "errorWorkflow": "QpyUQ2QRWh7Sjdpd",
-    "callerPolicy": "workflowsFromSameOwner"
+    "errorWorkflow": "XMvP2LX1fXTxlK27"
   },
-  "versionId": "d6ad809c-badc-4c5e-9799-9763f79f4bfd",
+  "versionId": "9f56e7c2-5832-4055-b8d2-0a1bbdfd2b18",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "98d190acccbd812f275e259bab9b6c50cd673d175f23d6d8e59ab2601437dbed"
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "ee0d4aab641842fbb7025e71d4d9a1d0ac0b671da70544f4f418eb3e8c0e3df7"
   },
   "nodeGroups": [],
-  "id": "X6FnJ5i2lMWh0k0O",
+  "id": "kkRbw7kVVyye0j7W",
   "tags": []
 }
