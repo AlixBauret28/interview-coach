@@ -3,26 +3,26 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "1fee2e79-f77e-45a1-be67-77649472d017",
+      "id": "cd2d3ca9-20c4-4048-9e36-423b04af65a3",
       "name": "A run failed",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
-        320,
-        -160
+        -400,
+        0
       ]
     },
     {
       "parameters": {
-        "jsCode": "// EDIT THIS LINE: the Telegram chat id that should receive failure alerts.\n// Currently Edgar's. Alix should replace it with her own when she takes the bot over.\nconst ADMIN_CHAT_ID = '8784636815';\n\nconst j = $input.first().json || {};\nconst ex = j.execution || {};\nconst wf = j.workflow || {};\nconst err = ex.error || {};\n\nconst lines = [];\nlines.push('Interview coach failed');\nlines.push('');\nlines.push('Workflow: ' + (wf.name || 'unknown'));\nlines.push('Node: ' + (ex.lastNodeExecuted || 'unknown'));\nlines.push('Mode: ' + (ex.mode || 'unknown'));\nlines.push('');\nlines.push('Error: ' + String(err.message || 'no message').slice(0, 500));\n\nif (ex.url) {\n  lines.push('');\n  lines.push(ex.url);\n}\n\nif (!ADMIN_CHAT_ID) {\n  // No admin id set, so there is nobody to tell. Fail quietly rather than erroring inside the error handler.\n  return [];\n}\n\nreturn [{ json: { chat_id: ADMIN_CHAT_ID, reply: lines.join('\\n') } }];"
+        "jsCode": "// EDIT THIS LINE: the Telegram chat id that should receive failure alerts.\n// Currently Edgar's. Alix should replace it with her own when she takes the bot over.\nconst ADMIN_CHAT_ID = '7550718257';\n\nconst j = $input.first().json || {};\nconst ex = j.execution || {};\nconst wf = j.workflow || {};\nconst err = ex.error || {};\n\nconst lines = [];\nlines.push('Interview coach failed');\nlines.push('');\nlines.push('Workflow: ' + (wf.name || 'unknown'));\nlines.push('Node: ' + (ex.lastNodeExecuted || 'unknown'));\nlines.push('Mode: ' + (ex.mode || 'unknown'));\nlines.push('');\nlines.push('Error: ' + String(err.message || 'no message').slice(0, 500));\n\nif (ex.url) {\n  lines.push('');\n  lines.push(ex.url);\n}\n\nif (!ADMIN_CHAT_ID) {\n  // No admin id set, so there is nobody to tell. Fail quietly rather than erroring inside the error handler.\n  return [];\n}\n\nreturn [{ json: { chat_id: ADMIN_CHAT_ID, reply: lines.join('\\n') } }];"
       },
-      "id": "397b03ef-408a-4e32-ad6e-32457b9a0f55",
+      "id": "be929c4b-add6-4d2a-bb1e-4c5b2f34815a",
       "name": "Format the alert",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        544,
-        -160
+        -176,
+        0
       ]
     },
     {
@@ -33,20 +33,20 @@
           "appendAttribution": false
         }
       },
-      "id": "0e68ad2c-4227-4d26-a7c0-2d8e048722eb",
+      "id": "bdb09fe1-3dde-4eb3-b0c5-2bf8d40c9796",
       "name": "Tell the owner",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        784,
-        -160
+        64,
+        0
       ],
       "retryOnFail": true,
       "webhookId": "e2ae95a4-5b3e-40fb-99f7-01c9f0f58879",
       "credentials": {
         "telegramApi": {
-          "id": "8cx4VTRBYcQKPwdO",
-          "name": "Telegram account"
+          "id": "wXCH00pVjpOwmSnA",
+          "name": "Telegram account 3"
         }
       }
     },
@@ -55,13 +55,13 @@
         "content": "## Set this as the error workflow\n\nOpen each Interview Coach workflow, then Settings, then Error Workflow, and choose this one.\n\nPut your own chat id at the top of **Format the alert** first. Until you do, this workflow runs and sends nothing, which is deliberate: an error handler that itself errors is worse than silence.",
         "color": 3
       },
-      "id": "af292da8-09e7-4c09-a887-fee790ee5cce",
+      "id": "76b7137a-2c41-4d23-9371-de2e13687d40",
       "name": "Sticky Note d4d78fc6",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        832,
-        144
+        112,
+        304
       ]
     }
   ],
@@ -96,12 +96,13 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "d9c9abe9-4e51-44c3-9df4-e97edf08d7f4",
+  "versionId": "2f9d4aa5-ce11-4758-b31d-1acb8db9701e",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "98d190acccbd812f275e259bab9b6c50cd673d175f23d6d8e59ab2601437dbed"
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "ee0d4aab641842fbb7025e71d4d9a1d0ac0b671da70544f4f418eb3e8c0e3df7"
   },
   "nodeGroups": [],
-  "id": "QpyUQ2QRWh7Sjdpd",
+  "id": "XMvP2LX1fXTxlK27",
   "tags": []
 }
