@@ -1,0 +1,194 @@
+{
+  "name": "Interview Coach - Nightly reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "630c8f69-b182-4c00-ae65-5416b2d444c9",
+      "name": "Every evening at 18:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblEuOAbzgvdns5KY",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "3263b37b-e350-4a85-aef1-4bd3ec73e25b",
+      "name": "Load every attempt",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        256,
+        160
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableOAuth2Api",
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appxZ1PlURAM03UYT",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblSYmhtV8WbgSiB1",
+          "mode": "id"
+        },
+        "filterByFormula": "{active}=1",
+        "options": {}
+      },
+      "id": "2ed6c3f7-07ab-4317-ab46-ec93877e10cd",
+      "name": "Load the question bank",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        160
+      ],
+      "executeOnce": true,
+      "retryOnFail": true,
+      "credentials": {
+        "airtableOAuth2Api": {
+          "id": "DxKTtryk3ycr8jJ0",
+          "name": "Airtable account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// One reminder per person who has used the bot before but has not practised today.\nfunction flat(items) {\n  return items.map(function (it) {\n    const f = it.json.fields || it.json;\n    const out = {};\n    for (const k in f) { out[k] = f[k]; }\n    return out;\n  });\n}\n\nconst attempts = flat($('Load every attempt').all()).filter(function (a) { return a.chat_id && a.created_at; });\nconst questions = flat($('Load the question bank').all()).filter(function (q) { return q.question_id && q.text; });\n\nconst questionText = {};\nquestions.forEach(function (q) { questionText[q.question_id] = q.text; });\n\nconst now = new Date();\nconst today = now.toISOString().slice(0, 10);\n\n// Group every attempt by the chat it came from.\nconst byChat = {};\nconst chatIds = [];\nattempts.forEach(function (a) {\n  const id = String(a.chat_id);\n  if (!byChat[id]) { byChat[id] = []; chatIds.push(id); }\n  byChat[id].push(a);\n});\n\nconst out = [];\n\nchatIds.forEach(function (id) {\n  const rows = byChat[id];\n\n  const days = {};\n  rows.forEach(function (r) {\n    const t = Date.parse(r.created_at);\n    if (!isNaN(t)) { days[new Date(t).toISOString().slice(0, 10)] = true; }\n  });\n\n  // Already practised today, so leave them alone.\n  if (days[today]) { return; }\n\n  // Streak counts back from yesterday, since today is still empty.\n  let streak = 0;\n  let cursor = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n  for (let i = 0; i < 365; i++) {\n    const key = cursor.toISOString().slice(0, 10);\n    if (!days[key]) { break; }\n    streak += 1;\n    cursor = new Date(cursor.getTime() - 24 * 60 * 60 * 1000);\n  }\n\n  // Anyone dormant for more than a fortnight gets left in peace.\n  let mostRecent = 0;\n  rows.forEach(function (r) {\n    const t = Date.parse(r.created_at);\n    if (!isNaN(t) && t > mostRecent) { mostRecent = t; }\n  });\n  if (now.getTime() - mostRecent > 14 * 24 * 60 * 60 * 1000) { return; }\n\n  const due = rows.filter(function (r) {\n    const d = Date.parse(r.due_at || '');\n    return !isNaN(d) && d <= now.getTime();\n  });\n\n  const lines = [];\n\n  if (streak > 0) {\n    lines.push('You are on a ' + streak + ' day streak. One question keeps it alive.');\n  } else {\n    lines.push('No practice today. One question is enough to start again.');\n  }\n\n  if (due.length > 0) {\n    const pick = due[0];\n    const text = questionText[pick.question_id];\n    if (text) {\n      lines.push('');\n      lines.push('Due for another go:');\n      lines.push(text);\n    }\n  }\n\n  lines.push('');\n  lines.push('Send /practice when you are ready.');\n\n  out.push({ json: { chat_id: id, reply: lines.join('\\n') } });\n});\n\nreturn out;"
+      },
+      "id": "0ce015aa-1cd7-4348-bdc0-c683721e958d",
+      "name": "Who needs a nudge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.reply }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "35d97d82-ace3-49b9-ac3b-2cd34b28e48d",
+      "name": "Send the nudge",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        160
+      ],
+      "retryOnFail": true,
+      "webhookId": "dd56751a-480f-42bf-bb8f-e5253c0cf3e4",
+      "credentials": {
+        "telegramApi": {
+          "id": "8cx4VTRBYcQKPwdO",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every evening at 18:00": {
+      "main": [
+        [
+          {
+            "node": "Load every attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load every attempt": {
+      "main": [
+        [
+          {
+            "node": "Load the question bank",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load the question bank": {
+      "main": [
+        [
+          {
+            "node": "Who needs a nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Who needs a nudge": {
+      "main": [
+        [
+          {
+            "node": "Send the nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "QpyUQ2QRWh7Sjdpd",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "eb9273a6-0da6-40b6-9cd6-a6e578ed00d8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "98d190acccbd812f275e259bab9b6c50cd673d175f23d6d8e59ab2601437dbed"
+  },
+  "nodeGroups": [],
+  "id": "VdoZcXE0jOiTt7Sv",
+  "tags": []
+}
