@@ -1,0 +1,7 @@
+# Secrets éventuels (clés notées en local, exports de credentials)
+.env
+.env.*
+*credentials*.json
+
+# Système
+.DS_Store
