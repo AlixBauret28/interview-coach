@@ -1,0 +1,345 @@
+{
+  "name": "Interview Coach - Grade answer",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "chat_id"
+            },
+            {
+              "name": "question_id"
+            },
+            {
+              "name": "question"
+            },
+            {
+              "name": "key_points"
+            },
+            {
+              "name": "answer"
+            },
+            {
+              "name": "topic"
+            },
+            {
+              "name": "hints_used",
+              "type": "number"
+            },
+            {
+              "name": "input_mode"
+            },
+            {
+              "name": "cv_text"
+            },
+            {
+              "name": "job_brief"
+            }
+          ]
+        }
+      },
+      "id": "2e5eae6d-9090-49d8-94be-2d4a352a7c44",
+      "name": "When called by the bot",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are grading an interview answer against a fixed checklist. You never assign a score.\n\nCANDIDATE BACKGROUND (from their CV, may be empty):\n{{ ($json.cv_text || 'Not provided.').slice(0, 4000) }}\n\nTHE JOB THEY ARE PREPARING FOR (in their own words, may be empty):\n{{ ($json.job_brief || 'Not provided.').slice(0, 2000) }}\n\nQUESTION:\n{{ $json.question }}\n\nCHECKLIST (key points, in order):\n{{ $json.key_points }}\n\nCANDIDATE ANSWER:\n{{ $json.answer }}\n\nFor each key point in the checklist, in the same order, decide whether the answer covers it.\n\nUse the background and the job only to judge specificity. If a key point asks for something concrete about the company or the role, an answer that would fit any employer does not cover it. If a key point asks them to name their own contribution, check it against the CV rather than taking the claim at face value.\n\nReturn exactly these three fields:\n- covered: an array of booleans, one per key point, in the same order as the checklist.\n- evidence: an array of strings, one per key point, in the same order. For a covered point, copy at most 12 words VERBATIM from the candidate's answer that show it. For an uncovered point, return an empty string.\n- feedback: one or two sentences telling the candidate what to add next time. Address them as \"you\". Where the job details allow it, make the advice specific to that role or company.\n\nThe evidence must be the candidate's own words, copied exactly from their answer. Never restate the key point as evidence, and never paraphrase. Every quote is checked against the answer afterwards, and a point whose quote is not found there is counted as not covered, so a point you cannot quote for should be marked false.\n\nJudge only what the answer actually says. Do not give credit for what the candidate probably meant, do not reward length on its own, and never mark a point covered because the CV shows they could have said it.",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "94778fe0-e1c7-49fc-840d-450c97f43732",
+      "name": "Check coverage",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        320,
+        128
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"covered\": [true, false], \"evidence\": [\"said she spoke to him directly\", \"\"], \"feedback\": \"You described the disagreement but never said how it ended.\" }",
+        "autoFix": true
+      },
+      "id": "280249c6-9058-4fa2-93af-48b4fa5a8f38",
+      "name": "Coverage schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deterministic scoring. The LLM only reported coverage; all arithmetic happens here.\nconst src = $('When called by the bot').first().json;\nconst raw = $input.first().json;\nconst parsed = (raw && raw.output) ? raw.output : raw;\n\nlet keyPoints = [];\ntry {\n  keyPoints = typeof src.key_points === 'string' ? JSON.parse(src.key_points) : (src.key_points || []);\n} catch (e) {\n  keyPoints = [];\n}\n\nconst total = Array.isArray(keyPoints) ? keyPoints.length : 0;\nconst coveredRaw = (parsed && Array.isArray(parsed.covered)) ? parsed.covered : null;\nconst evidenceRaw = (parsed && Array.isArray(parsed.evidence)) ? parsed.evidence : [];\nconst feedback = (parsed && typeof parsed.feedback === 'string') ? parsed.feedback : '';\n\n// Validation: the model must return one verdict per key point, no more, no fewer.\nconst valid = total > 0 && coveredRaw !== null && coveredRaw.length === total;\n\nif (!valid) {\n  return [{\n    json: {\n      grade_valid: false,\n      chat_id: src.chat_id,\n      question_id: src.question_id,\n      topic: src.topic,\n      answer: src.answer,\n      input_mode: src.input_mode || 'text',\n      reason: total === 0 ? 'question has no key points' : 'model returned a mismatched verdict list'\n    }\n  }];\n}\n\nfunction normalise(s) {\n  return String(s || '')\n    .toLowerCase()\n    .replace(/[^a-z0-9\\u00e0-\\u00ff ]+/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nconst answerNorm = normalise(src.answer);\nconst answerTokens = {};\nanswerNorm.split(' ').forEach(function (t) { if (t) { answerTokens[t] = true; } });\n\n// A covered verdict only counts if its evidence quote really came from the answer.\n// Models will otherwise echo the rubric back as evidence, which inflates the score.\nfunction evidenceHolds(quote) {\n  const q = normalise(quote);\n  if (q.length < 8) { return false; }\n  if (answerNorm.indexOf(q) !== -1) { return true; }\n\n  // Allow for a dropped or altered word in an otherwise genuine quote.\n  const words = q.split(' ').filter(function (w) { return w.length > 2; });\n  if (words.length === 0) { return false; }\n  let hits = 0;\n  words.forEach(function (w) { if (answerTokens[w]) { hits += 1; } });\n  return (hits / words.length) >= 0.8;\n}\n\nconst claimed = coveredRaw.map(function (v) { return v === true || v === 'true'; });\nconst covered = [];\nconst rejected = [];\n\nfor (let i = 0; i < total; i++) {\n  if (!claimed[i]) {\n    covered.push(false);\n  } else if (evidenceHolds(evidenceRaw[i])) {\n    covered.push(true);\n  } else {\n    // Claimed as covered but the quote is not in the answer, so it does not count.\n    covered.push(false);\n    rejected.push(keyPoints[i]);\n  }\n}\n\nconst hits = covered.filter(Boolean).length;\nconst claimedHits = claimed.filter(Boolean).length;\n\nconst met = [];\nconst missed = [];\nfor (let i = 0; i < total; i++) {\n  if (covered[i]) {\n    met.push(keyPoints[i]);\n  } else {\n    missed.push(keyPoints[i]);\n  }\n}\n\n// Coverage is worth 4. Structure is worth up to 1. Hints cost 0.5 each, capped at 1.\nconst words = String(src.answer || '').trim().split(/\\s+/).filter(Boolean).length;\nlet structureBonus = 0;\nif (words >= 60) { structureBonus = 0.5; }\nif (words >= 120) { structureBonus = 1; }\n\nconst hints = Number(src.hints_used || 0);\nconst hintPenalty = Math.min(1, hints * 0.5);\n\nconst rawScore = (hits / total) * 4 + structureBonus - hintPenalty;\nconst score = Math.round(Math.max(0, Math.min(5, rawScore)) * 2) / 2;\n\n// Spaced repetition: a weak answer comes back in 2 days, a middling one in a week.\nconst now = new Date();\nlet dueAt = null;\nif (score < 3) {\n  dueAt = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString();\n} else if (score < 4) {\n  dueAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();\n}\n\nlet missedBlock = 'Nothing major missing.';\nif (missed.length > 0) {\n  missedBlock = missed.map(function (m) { return '- ' + m; }).join('\\n');\n}\n\nlet metBlock = 'None of the checklist points came through.';\nif (met.length > 0) {\n  metBlock = met.map(function (m) { return '- ' + m; }).join('\\n');\n}\n\nreturn [{\n  json: {\n    grade_valid: true,\n    chat_id: src.chat_id,\n    question_id: src.question_id,\n    topic: src.topic,\n    answer: src.answer,\n    input_mode: src.input_mode || 'text',\n    score: score,\n    hits: hits,\n    claimed_hits: claimedHits,\n    rejected_count: rejected.length,\n    total: total,\n    words: words,\n    structure_bonus: structureBonus,\n    hint_penalty: hintPenalty,\n    covered_json: JSON.stringify({ covered: covered, claimed: claimed, evidence: evidenceRaw, rejected: rejected, key_points: keyPoints }),\n    feedback: feedback,\n    met_block: metBlock,\n    missed_block: missedBlock,\n    created_at: now.toISOString(),\n    due_at: dueAt\n  }\n}];"
+      },
+      "id": "450f00c9-4874-49fe-a03b-0692ab99bcf3",
+      "name": "Score the answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "valid-check",
+              "leftValue": "={{ $json.grade_valid }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "135caf0a-9e1f-4d0f-bc9c-57b8efb5d1d8",
+      "name": "Grade valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ok",
+              "name": "graded",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "12223db5-a30a-4c8d-8d21-9e31bd74d20f",
+      "name": "Return grade",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ok",
+              "name": "graded",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "score-zero",
+              "name": "score",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "fb",
+              "name": "feedback",
+              "value": "I could not grade that one reliably, so it has not been saved. Send /practice to try another question.",
+              "type": "string"
+            },
+            {
+              "id": "met",
+              "name": "met_block",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "missed",
+              "name": "missed_block",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "d1454356-6a11-4c88-9bb8-a38d8030f12b",
+      "name": "Grading failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        208,
+        336
+      ],
+      "id": "d8074119-f424-403e-aef9-5960fc70f36d",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "tkX91VjRKNG5ZHrI",
+          "name": "OpenRouter account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When called by the bot": {
+      "main": [
+        [
+          {
+            "node": "Check coverage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check coverage": {
+      "main": [
+        [
+          {
+            "node": "Score the answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coverage schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Check coverage",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score the answer": {
+      "main": [
+        [
+          {
+            "node": "Grade valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grade valid?": {
+      "main": [
+        [
+          {
+            "node": "Return grade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Grading failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Check coverage",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Coverage schema",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "QpyUQ2QRWh7Sjdpd",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "27cd0ab2-8a91-463e-8f7a-49cfd9004d04",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "98d190acccbd812f275e259bab9b6c50cd673d175f23d6d8e59ab2601437dbed"
+  },
+  "nodeGroups": [
+    {
+      "id": "91b4412d-d939-4528-bef2-df728c6e0f0c",
+      "name": "Coverage check",
+      "nodeIds": [
+        "94778fe0-e1c7-49fc-840d-450c97f43732",
+        "280249c6-9058-4fa2-93af-48b4fa5a8f38",
+        "d8074119-f424-403e-aef9-5960fc70f36d"
+      ],
+      "description": "The model reports covered true or false per key point, with a quote as evidence. It never scores."
+    },
+    {
+      "id": "33a97677-77e1-4ea0-bc45-ddf089cec92f",
+      "name": "Scoring and validation",
+      "nodeIds": [
+        "450f00c9-4874-49fe-a03b-0692ab99bcf3",
+        "135caf0a-9e1f-4d0f-bc9c-57b8efb5d1d8",
+        "12223db5-a30a-4c8d-8d21-9e31bd74d20f",
+        "d1454356-6a11-4c88-9bb8-a38d8030f12b"
+      ],
+      "description": "Verifies each evidence quote against the answer, then computes the score. All arithmetic happens here."
+    }
+  ],
+  "id": "QMTj3TdvZHMNfhhu",
+  "tags": []
+}
