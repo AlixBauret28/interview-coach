@@ -39,13 +39,13 @@
           ]
         }
       },
-      "id": "2e5eae6d-9090-49d8-94be-2d4a352a7c44",
+      "id": "db21e240-cb09-4c0d-a74f-4c8f437efaf7",
       "name": "When called by the bot",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
       "position": [
-        0,
-        128
+        -464,
+        0
       ]
     },
     {
@@ -55,13 +55,13 @@
         "hasOutputParser": true,
         "batching": {}
       },
-      "id": "94778fe0-e1c7-49fc-840d-450c97f43732",
+      "id": "28863dc9-3e61-4ea8-a120-ad687082a120",
       "name": "Check coverage",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        320,
-        128
+        -144,
+        0
       ],
       "retryOnFail": true,
       "maxTries": 2,
@@ -72,26 +72,26 @@
         "jsonSchemaExample": "{ \"covered\": [true, false], \"evidence\": [\"said she spoke to him directly\", \"\"], \"feedback\": \"You described the disagreement but never said how it ended.\" }",
         "autoFix": true
       },
-      "id": "280249c6-9058-4fa2-93af-48b4fa5a8f38",
+      "id": "c46192c1-b832-4b0b-be54-459b08e5d92a",
       "name": "Coverage schema",
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        544,
-        352
+        80,
+        224
       ]
     },
     {
       "parameters": {
         "jsCode": "// Deterministic scoring. The LLM only reported coverage; all arithmetic happens here.\nconst src = $('When called by the bot').first().json;\nconst raw = $input.first().json;\nconst parsed = (raw && raw.output) ? raw.output : raw;\n\nlet keyPoints = [];\ntry {\n  keyPoints = typeof src.key_points === 'string' ? JSON.parse(src.key_points) : (src.key_points || []);\n} catch (e) {\n  keyPoints = [];\n}\n\nconst total = Array.isArray(keyPoints) ? keyPoints.length : 0;\nconst coveredRaw = (parsed && Array.isArray(parsed.covered)) ? parsed.covered : null;\nconst evidenceRaw = (parsed && Array.isArray(parsed.evidence)) ? parsed.evidence : [];\nconst feedback = (parsed && typeof parsed.feedback === 'string') ? parsed.feedback : '';\n\n// Validation: the model must return one verdict per key point, no more, no fewer.\nconst valid = total > 0 && coveredRaw !== null && coveredRaw.length === total;\n\nif (!valid) {\n  return [{\n    json: {\n      grade_valid: false,\n      chat_id: src.chat_id,\n      question_id: src.question_id,\n      topic: src.topic,\n      answer: src.answer,\n      input_mode: src.input_mode || 'text',\n      reason: total === 0 ? 'question has no key points' : 'model returned a mismatched verdict list'\n    }\n  }];\n}\n\nfunction normalise(s) {\n  return String(s || '')\n    .toLowerCase()\n    .replace(/[^a-z0-9\\u00e0-\\u00ff ]+/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nconst answerNorm = normalise(src.answer);\nconst answerTokens = {};\nanswerNorm.split(' ').forEach(function (t) { if (t) { answerTokens[t] = true; } });\n\n// A covered verdict only counts if its evidence quote really came from the answer.\n// Models will otherwise echo the rubric back as evidence, which inflates the score.\nfunction evidenceHolds(quote) {\n  const q = normalise(quote);\n  if (q.length < 8) { return false; }\n  if (answerNorm.indexOf(q) !== -1) { return true; }\n\n  // Allow for a dropped or altered word in an otherwise genuine quote.\n  const words = q.split(' ').filter(function (w) { return w.length > 2; });\n  if (words.length === 0) { return false; }\n  let hits = 0;\n  words.forEach(function (w) { if (answerTokens[w]) { hits += 1; } });\n  return (hits / words.length) >= 0.8;\n}\n\nconst claimed = coveredRaw.map(function (v) { return v === true || v === 'true'; });\nconst covered = [];\nconst rejected = [];\n\nfor (let i = 0; i < total; i++) {\n  if (!claimed[i]) {\n    covered.push(false);\n  } else if (evidenceHolds(evidenceRaw[i])) {\n    covered.push(true);\n  } else {\n    // Claimed as covered but the quote is not in the answer, so it does not count.\n    covered.push(false);\n    rejected.push(keyPoints[i]);\n  }\n}\n\nconst hits = covered.filter(Boolean).length;\nconst claimedHits = claimed.filter(Boolean).length;\n\nconst met = [];\nconst missed = [];\nfor (let i = 0; i < total; i++) {\n  if (covered[i]) {\n    met.push(keyPoints[i]);\n  } else {\n    missed.push(keyPoints[i]);\n  }\n}\n\n// Coverage is worth 4. Structure is worth up to 1. Hints cost 0.5 each, capped at 1.\nconst words = String(src.answer || '').trim().split(/\\s+/).filter(Boolean).length;\nlet structureBonus = 0;\nif (words >= 60) { structureBonus = 0.5; }\nif (words >= 120) { structureBonus = 1; }\n\nconst hints = Number(src.hints_used || 0);\nconst hintPenalty = Math.min(1, hints * 0.5);\n\nconst rawScore = (hits / total) * 4 + structureBonus - hintPenalty;\nconst score = Math.round(Math.max(0, Math.min(5, rawScore)) * 2) / 2;\n\n// Spaced repetition: a weak answer comes back in 2 days, a middling one in a week.\nconst now = new Date();\nlet dueAt = null;\nif (score < 3) {\n  dueAt = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString();\n} else if (score < 4) {\n  dueAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();\n}\n\nlet missedBlock = 'Nothing major missing.';\nif (missed.length > 0) {\n  missedBlock = missed.map(function (m) { return '- ' + m; }).join('\\n');\n}\n\nlet metBlock = 'None of the checklist points came through.';\nif (met.length > 0) {\n  metBlock = met.map(function (m) { return '- ' + m; }).join('\\n');\n}\n\nreturn [{\n  json: {\n    grade_valid: true,\n    chat_id: src.chat_id,\n    question_id: src.question_id,\n    topic: src.topic,\n    answer: src.answer,\n    input_mode: src.input_mode || 'text',\n    score: score,\n    hits: hits,\n    claimed_hits: claimedHits,\n    rejected_count: rejected.length,\n    total: total,\n    words: words,\n    structure_bonus: structureBonus,\n    hint_penalty: hintPenalty,\n    covered_json: JSON.stringify({ covered: covered, claimed: claimed, evidence: evidenceRaw, rejected: rejected, key_points: keyPoints }),\n    feedback: feedback,\n    met_block: metBlock,\n    missed_block: missedBlock,\n    created_at: now.toISOString(),\n    due_at: dueAt\n  }\n}];"
       },
-      "id": "450f00c9-4874-49fe-a03b-0692ab99bcf3",
+      "id": "f5c28340-ff3c-493a-ad61-ae82c701fc29",
       "name": "Score the answer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        656,
-        128
+        192,
+        0
       ]
     },
     {
@@ -118,13 +118,13 @@
         },
         "options": {}
       },
-      "id": "135caf0a-9e1f-4d0f-bc9c-57b8efb5d1d8",
+      "id": "51f1776c-5336-4f5e-8225-8ab9697fbb3d",
       "name": "Grade valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        976,
-        128
+        512,
+        0
       ]
     },
     {
@@ -142,13 +142,13 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "12223db5-a30a-4c8d-8d21-9e31bd74d20f",
+      "id": "1336ad74-d665-4ef7-9709-def6789a12dd",
       "name": "Return grade",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1296,
-        0
+        832,
+        -128
       ]
     },
     {
@@ -190,34 +190,35 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "d1454356-6a11-4c88-9bb8-a38d8030f12b",
+      "id": "5793bbdf-33af-4038-85c9-2cce426ef5da",
       "name": "Grading failed",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1296,
-        256
+        832,
+        128
       ]
     },
     {
       "parameters": {
-        "model": "openai/gpt-4o-mini",
+        "model": "llama-3.3-70b-versatile",
         "options": {
+          "maxTokensToSample": 900,
           "temperature": 0
         }
       },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "id": "7611a9bb-410d-449e-bca0-27acd967815c",
+      "name": "Groq grading model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        208,
-        336
+        -144,
+        224
       ],
-      "id": "d8074119-f424-403e-aef9-5960fc70f36d",
-      "name": "OpenRouter Chat Model",
       "credentials": {
-        "openRouterApi": {
-          "id": "tkX91VjRKNG5ZHrI",
-          "name": "OpenRouter account 2"
+        "groqApi": {
+          "id": "nQ5hQiyH67THxEA3",
+          "name": "Groq account"
         }
       }
     }
@@ -286,7 +287,7 @@
         ]
       ]
     },
-    "OpenRouter Chat Model": {
+    "Groq grading model": {
       "ai_languageModel": [
         [
           {
@@ -308,38 +309,37 @@
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": true,
-    "timeSavedMode": "fixed",
-    "errorWorkflow": "QpyUQ2QRWh7Sjdpd",
-    "callerPolicy": "workflowsFromSameOwner"
+    "errorWorkflow": "XMvP2LX1fXTxlK27"
   },
-  "versionId": "27cd0ab2-8a91-463e-8f7a-49cfd9004d04",
+  "versionId": "88148d21-15a9-4481-9b78-c51b03450a7c",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "98d190acccbd812f275e259bab9b6c50cd673d175f23d6d8e59ab2601437dbed"
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "ee0d4aab641842fbb7025e71d4d9a1d0ac0b671da70544f4f418eb3e8c0e3df7"
   },
   "nodeGroups": [
     {
-      "id": "91b4412d-d939-4528-bef2-df728c6e0f0c",
+      "id": "0b62d213-75e4-4d81-817d-536fa3bfbb3c",
       "name": "Coverage check",
       "nodeIds": [
-        "94778fe0-e1c7-49fc-840d-450c97f43732",
-        "280249c6-9058-4fa2-93af-48b4fa5a8f38",
-        "d8074119-f424-403e-aef9-5960fc70f36d"
+        "28863dc9-3e61-4ea8-a120-ad687082a120",
+        "7611a9bb-410d-449e-bca0-27acd967815c",
+        "c46192c1-b832-4b0b-be54-459b08e5d92a"
       ],
       "description": "The model reports covered true or false per key point, with a quote as evidence. It never scores."
     },
     {
-      "id": "33a97677-77e1-4ea0-bc45-ddf089cec92f",
+      "id": "4950f4ad-2012-4c54-bfe5-2624b193ee0c",
       "name": "Scoring and validation",
       "nodeIds": [
-        "450f00c9-4874-49fe-a03b-0692ab99bcf3",
-        "135caf0a-9e1f-4d0f-bc9c-57b8efb5d1d8",
-        "12223db5-a30a-4c8d-8d21-9e31bd74d20f",
-        "d1454356-6a11-4c88-9bb8-a38d8030f12b"
+        "f5c28340-ff3c-493a-ad61-ae82c701fc29",
+        "51f1776c-5336-4f5e-8225-8ab9697fbb3d",
+        "1336ad74-d665-4ef7-9709-def6789a12dd",
+        "5793bbdf-33af-4038-85c9-2cce426ef5da"
       ],
       "description": "Verifies each evidence quote against the answer, then computes the score. All arithmetic happens here."
     }
   ],
-  "id": "QMTj3TdvZHMNfhhu",
+  "id": "AGv8amixNZvVXReS",
   "tags": []
 }
